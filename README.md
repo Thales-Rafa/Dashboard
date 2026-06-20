@@ -1,23 +1,75 @@
-# Dashboard de Aderência de Embarque - V2
+# Dashboard de Aderência de Embarque - V3
 
-Melhorias:
+Versão com cálculo correto de aderência usando duas bases:
 
-- Visual premium com azul escuro, branco e cinza claro
-- Interface sem emojis
-- Cards de indicadores personalizados
-- Gráficos redesenhados
-- Campo de cliente no upload
+1. Excel de embarques realizados
+2. Base de colaboradores cadastrados
+
+## Fórmula principal
+
+```text
+Esperado = colaboradores cadastrados × embarques esperados por colaborador/dia × dias considerados
+Aderência = embarques realizados / embarques esperados
+```
+
+Por padrão:
+
+```text
+2 embarques esperados por colaborador/dia
+```
+
+## Arquivos esperados
+
+### Excel de embarques
+
+Colunas aceitas:
+
+- TIPO
+- PASSAGEIRO
+- LINHA
+- PREFIXO
+- DATA/HORA
+- LATITUDE
+- LONGITUDE
+
+### Base de colaboradores
+
+Colunas aceitas:
+
+- NOME
+- MATRÍCULA
+- LINHA
+- TURNO
+- ACESSO APP
+- CADASTRO
+- RFID
+- OBSERVAÇÃO
+
+## Recursos da V3
+
+- Upload separado para embarques realizados
+- Upload separado para colaboradores cadastrados
+- Cálculo de esperado com base em colaboradores cadastrados
+- Regra de 2 embarques por colaborador/dia
+- Opção para considerar data de cadastro
 - Filtro por cliente
-- Aba de cliente e linhas
-- Histórico temporário da sessão
+- Filtro por linha
+- Filtro por turno
+- Filtro por tipo de embarque
+- Esperado x Realizado por dia
+- Aderência diária
+- Colaboradores cadastrados sem embarque
+- Embarques fora da base de colaboradores
+- Exportação de CSV
 
-## Separação por cliente
+## Deploy
 
-Se o Excel tiver coluna CLIENTE, o app usa essa coluna.
-Se não tiver, usa o campo Cliente desta importação na barra lateral.
+Arquivos necessários:
 
-## Histórico
-
-A V2 possui histórico temporário por sessão. Para salvar, envie o Excel e clique em Salvar resumo desta importação.
-
-Para histórico permanente, a próxima versão deve usar SQLite ou banco externo.
+```text
+app.py
+requirements.txt
+runtime.txt
+pyproject.toml
+README.md
+```
