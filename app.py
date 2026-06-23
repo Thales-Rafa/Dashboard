@@ -103,7 +103,7 @@ st.markdown(
 
         .kpi-value {{
             color: {WHITE};
-            font-size: clamp(24px, 2vw, 34px);
+            font-size: clamp(23px, 1.9vw, 32px);
             font-weight: 850;
             letter-spacing: -0.04em;
             line-height: 1;
@@ -302,6 +302,10 @@ def datas_consideradas(inicio, fim, dados_embarque, modo):
         return [d.date() for d in pd.bdate_range(pd.to_datetime(inicio), pd.to_datetime(fim))]
     return [d.date() for d in pd.date_range(pd.to_datetime(inicio), pd.to_datetime(fim))]
 
+def datas_operacao(inicio, fim, dias_semana_selecionados):
+    todas = pd.date_range(pd.to_datetime(inicio), pd.to_datetime(fim), freq="D")
+    return [d.date() for d in todas if d.weekday() in dias_semana_selecionados]
+
 def calcular_esperado_por_dia(base_colab, datas, embarques_por_colaborador_dia, considerar_data_cadastro=True):
     linhas = []
     for data in datas:
@@ -363,20 +367,22 @@ with st.sidebar:
     cliente_upload = st.text_input("Cliente desta importação", value="CAIEIRAS")
 
     arquivo_embarques = st.file_uploader(
-        "Excel de embarques realizados",
+        "Relatório de embarque",
         type=["xlsx", "xls"],
-        key="embarques"
+        key="embarques",
+        help="Arquivo com os embarques realizados via QR Code ou crachá."
     )
 
     arquivo_colaboradores = st.file_uploader(
-        "Base de colaboradores cadastrados",
+        "Arquivo de colaboradores cadastrados",
         type=["xlsx", "xls"],
-        key="colaboradores"
+        key="colaboradores",
+        help="Base com todos os colaboradores cadastrados/ativos."
     )
 
     st.divider()
 
-    st.markdown("### Regra do esperado")
+    st.markdown("### Regra da operação")
     embarques_por_colaborador_dia = st.number_input(
         "Embarques esperados por colaborador/dia",
         min_value=1,
@@ -385,15 +391,39 @@ with st.sidebar:
         step=1
     )
 
-    modo_dias = st.radio(
-        "Quais dias entram no cálculo?",
+    preset_operacao = st.selectbox(
+        "Dias que a operação roda",
         [
-            "Dias com registro de embarque",
-            "Dias úteis do período",
-            "Todos os dias do período"
+            "Segunda a sexta",
+            "Segunda a sábado",
+            "Segunda a domingo",
+            "Personalizado"
         ],
-        index=0
+        index=2
     )
+
+    if preset_operacao == "Segunda a sexta":
+        dias_semana_selecionados = [0, 1, 2, 3, 4]
+    elif preset_operacao == "Segunda a sábado":
+        dias_semana_selecionados = [0, 1, 2, 3, 4, 5]
+    elif preset_operacao == "Segunda a domingo":
+        dias_semana_selecionados = [0, 1, 2, 3, 4, 5, 6]
+    else:
+        mapa_dias = {
+            "Segunda": 0,
+            "Terça": 1,
+            "Quarta": 2,
+            "Quinta": 3,
+            "Sexta": 4,
+            "Sábado": 5,
+            "Domingo": 6,
+        }
+        dias_escolhidos = st.multiselect(
+            "Selecione os dias",
+            list(mapa_dias.keys()),
+            default=list(mapa_dias.keys())
+        )
+        dias_semana_selecionados = [mapa_dias[d] for d in dias_escolhidos]
 
     considerar_data_cadastro = st.checkbox(
         "Considerar data de cadastro do colaborador",
@@ -420,8 +450,9 @@ if arquivo_embarques is None or arquivo_colaboradores is None:
     st.markdown(
         """
         <div class="info-box">
-            Para calcular aderência corretamente, envie os dois arquivos: 
-            o Excel de embarques realizados e a base de colaboradores cadastrados.
+            Para calcular a aderência corretamente, envie os dois arquivos:
+            <br><strong>1.</strong> Relatório de embarque
+            <br><strong>2.</strong> Arquivo de colaboradores cadastrados
         </div>
         """,
         unsafe_allow_html=True
@@ -429,9 +460,9 @@ if arquivo_embarques is None or arquivo_colaboradores is None:
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        kpi_card("Arquivo 1", "Embarques", "Registros realizados")
+        kpi_card("Relatório", "Embarque", "Realizado")
     with c2:
-        kpi_card("Arquivo 2", "Colaboradores", "Base cadastrada")
+        kpi_card("Base", "Colaboradores", "Cadastrados")
     with c3:
         kpi_card("Regra padrão", "2 por dia", "Por colaborador")
     st.stop()
@@ -510,7 +541,10 @@ if colaboradores_filtrados.empty:
 # ============================================================
 # CÁLCULO CORRETO
 # ============================================================
-datas = datas_consideradas(inicio, fim, embarques_filtrados, modo_dias)
+datas = datas_operacao(inicio, fim, dias_semana_selecionados)
+if not datas:
+    st.warning("Nenhum dia de operação foi selecionado para o período analisado.")
+    st.stop()
 esperado_dia = calcular_esperado_por_dia(
     colaboradores_filtrados,
     datas,
@@ -538,6 +572,7 @@ total_esperado = int(evolucao["ESPERADO"].sum())
 total_embarcado = int(embarques_filtrados.shape[0])
 aderencia = (total_embarcado / total_esperado * 100) if total_esperado else 0
 faltas_estimadas = max(total_esperado - total_embarcado, 0)
+dias_operacao_qtd = len(datas)
 
 nomes_base = set(colaboradores_filtrados["NOME_KEY"].unique())
 nomes_embarcaram = set(embarques_filtrados["PASSAGEIRO_KEY"].unique())
@@ -555,51 +590,43 @@ st.markdown('<div class="section-title">Indicadores</div>', unsafe_allow_html=Tr
 
 k1, k2, k3, k4, k5, k6 = st.columns(6)
 with k1:
-    kpi_card("Colaboradores cadastrados", formatar_num(total_colaboradores_cadastrados), "Base importada")
+    kpi_card("Colaboradores cadastrados", formatar_num(total_colaboradores_cadastrados), "Base enviada")
 with k2:
-    kpi_card("Esperado", formatar_num(total_esperado), f"{embarques_por_colaborador_dia} por colaborador/dia")
+    kpi_card("Dias de operação", formatar_num(dias_operacao_qtd), preset_operacao)
 with k3:
-    kpi_card("Realizado", formatar_num(total_embarcado), "Registros no Excel")
+    kpi_card("Esperado", formatar_num(total_esperado), f"{embarques_por_colaborador_dia} embarques por colaborador/dia")
 with k4:
-    kpi_card("Aderência", formatar_pct(aderencia), "Realizado / Esperado")
+    kpi_card("Realizado", formatar_num(total_embarcado), "Relatório de embarque")
 with k5:
-    kpi_card("Faltas estimadas", formatar_num(faltas_estimadas), "Diferença do planejado")
+    kpi_card("Aderência", formatar_pct(aderencia), "Realizado / Esperado")
 with k6:
-    kpi_card("Colaboradores que embarcaram", formatar_num(total_colaboradores_que_embarcaram), "Nomes únicos")
+    kpi_card("Faltas estimadas", formatar_num(faltas_estimadas), "Esperado - realizado")
 
 st.markdown(
     f"""
     <div class="info-box">
-        Fórmula aplicada: colaboradores cadastrados × {embarques_por_colaborador_dia} embarques por dia × dias considerados.
-        Dias considerados nesta visão: {len(datas)}.
+        <strong>Regra aplicada:</strong> {formatar_num(total_colaboradores_cadastrados)} colaboradores cadastrados × 
+        {embarques_por_colaborador_dia} embarques por colaborador/dia × {dias_operacao_qtd} dias de operação.
+        <br>
+        <strong>Período analisado:</strong> {inicio.strftime('%d/%m/%Y')} até {fim.strftime('%d/%m/%Y')}.
+        <br>
+        <strong>Dias considerados:</strong> {preset_operacao}.
     </div>
     """,
     unsafe_allow_html=True
 )
 
-if len(fora_da_base_keys) > 0:
-    st.markdown(
-        f"""
-        <div class="warning-box">
-            Atenção: existem {len(fora_da_base_keys)} passageiros com embarque registrado que não foram encontrados na base de colaboradores.
-            Confira nomes divergentes, acentos, espaços, desligados ou base desatualizada.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 # ============================================================
 # ABAS
 # ============================================================
-aba1, aba2, aba3, aba4 = st.tabs([
+aba1, aba2 = st.tabs([
     "Visão geral",
-    "Colaboradores",
-    "Divergências",
-    "Dados filtrados"
+    "Colaboradores"
 ])
 
 with aba1:
-    st.markdown('<div class="section-title">Evolução diária</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Evolução operacional</div>', unsafe_allow_html=True)
 
     fig = go.Figure()
     fig.add_trace(
@@ -623,7 +650,9 @@ with aba1:
             name="Realizado"
         )
     )
-    fig = aplicar_layout(fig, "Esperado x Realizado por dia")
+    fig.update_xaxes(title_text="Data")
+    fig.update_yaxes(title_text="Quantidade de embarques")
+    fig = aplicar_layout(fig, "Esperado x realizado por dia")
     st.plotly_chart(fig, use_container_width=True)
 
     c1, c2 = st.columns(2)
@@ -640,22 +669,26 @@ with aba1:
                 name="Aderência"
             )
         )
-        fig_ad = aplicar_layout(fig_ad, "Aderência diária (%)")
+        fig_ad.update_xaxes(title_text="Data")
+        fig_ad.update_yaxes(title_text="Aderência (%)")
+        fig_ad = aplicar_layout(fig_ad, "Aderência diária")
         st.plotly_chart(fig_ad, use_container_width=True)
 
     with c2:
         por_turno = (
             colaboradores_filtrados.groupby("TURNO_TRATADO")
             .size()
-            .reset_index(name="COLABORADORES")
-            .sort_values("COLABORADORES", ascending=False)
+            .reset_index(name="Colaboradores")
+            .rename(columns={"TURNO_TRATADO": "Turno"})
+            .sort_values("Colaboradores", ascending=False)
         )
         fig_turno = px.bar(
             por_turno,
-            x="TURNO_TRATADO",
-            y="COLABORADORES",
-            text="COLABORADORES",
-            color_discrete_sequence=[BLUE]
+            x="Turno",
+            y="Colaboradores",
+            text="Colaboradores",
+            color_discrete_sequence=[BLUE],
+            labels={"Turno": "Turno", "Colaboradores": "Colaboradores"}
         )
         fig_turno.update_traces(marker_line_color=WHITE, marker_line_width=0.8, textposition="outside")
         fig_turno = aplicar_layout(fig_turno, "Colaboradores por turno")
@@ -667,15 +700,17 @@ with aba1:
         por_tipo = (
             embarques_filtrados.groupby("TIPO_TRATADO")
             .size()
-            .reset_index(name="TOTAL")
-            .sort_values("TOTAL", ascending=False)
+            .reset_index(name="Total")
+            .rename(columns={"TIPO_TRATADO": "Tipo"})
+            .sort_values("Total", ascending=False)
         )
         fig_tipo = px.bar(
             por_tipo,
-            x="TIPO_TRATADO",
-            y="TOTAL",
-            text="TOTAL",
-            color_discrete_sequence=[BLUE]
+            x="Tipo",
+            y="Total",
+            text="Total",
+            color_discrete_sequence=[BLUE],
+            labels={"Tipo": "Tipo de embarque", "Total": "Total de embarques"}
         )
         fig_tipo.update_traces(marker_line_color=WHITE, marker_line_width=0.8, textposition="outside")
         fig_tipo = aplicar_layout(fig_tipo, "Embarques por tipo")
@@ -685,91 +720,61 @@ with aba1:
         por_prefixo = (
             embarques_filtrados.groupby("PREFIXO_TRATADO")
             .size()
-            .reset_index(name="TOTAL")
-            .sort_values("TOTAL", ascending=False)
-            .head(12)
+            .reset_index(name="Total")
+            .rename(columns={"PREFIXO_TRATADO": "Prefixo"})
+            .sort_values("Total", ascending=False)
+            .head(10)
         )
         fig_prefixo = px.bar(
             por_prefixo,
-            x="TOTAL",
-            y="PREFIXO_TRATADO",
-            orientation="h",
-            text="TOTAL",
-            color_discrete_sequence=[BLUE]
+            x="Prefixo",
+            y="Total",
+            text="Total",
+            color_discrete_sequence=[BLUE],
+            labels={"Prefixo": "Prefixo", "Total": "Total de embarques"}
         )
-        fig_prefixo.update_traces(marker_line_color=WHITE, marker_line_width=0.7, textposition="outside")
-        fig_prefixo.update_layout(yaxis=dict(categoryorder="total ascending"))
-        fig_prefixo = aplicar_layout(fig_prefixo, "Prefixos com mais embarques")
+        fig_prefixo.update_traces(marker_line_color=WHITE, marker_line_width=0.8, textposition="outside")
+        fig_prefixo.update_xaxes(type="category")
+        fig_prefixo = aplicar_layout(fig_prefixo, "Top 10 prefixos por embarque")
         st.plotly_chart(fig_prefixo, use_container_width=True)
 
 with aba2:
-    st.markdown('<div class="section-title">Ranking de colaboradores</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Colaboradores</div>', unsafe_allow_html=True)
 
     ranking = (
         embarques_filtrados.groupby(["PASSAGEIRO_TRATADO", "PASSAGEIRO_KEY"])
         .size()
-        .reset_index(name="EMBARQUES_REALIZADOS")
-        .sort_values("EMBARQUES_REALIZADOS", ascending=False)
+        .reset_index(name="Embarques realizados")
+        .rename(columns={"PASSAGEIRO_TRATADO": "Colaborador"})
+        .sort_values("Embarques realizados", ascending=False)
     )
 
-    ranking["ESTA_NA_BASE"] = ranking["PASSAGEIRO_KEY"].isin(nomes_base).map({True: "SIM", False: "NÃO"})
+    ranking["Está na base"] = ranking["PASSAGEIRO_KEY"].isin(nomes_base).map({True: "Sim", False: "Não"})
+
+    st.subheader("Ranking de colaboradores por embarques")
     st.dataframe(
-        ranking[["PASSAGEIRO_TRATADO", "EMBARQUES_REALIZADOS", "ESTA_NA_BASE"]],
+        ranking[["Colaborador", "Embarques realizados", "Está na base"]],
         use_container_width=True,
         hide_index=True
     )
 
-with aba3:
-    st.markdown('<div class="section-title">Divergências de base</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        """
-        <div class="info-box">
-            Esta aba ajuda a encontrar problemas de cadastro: colaboradores cadastrados sem nenhum embarque no período 
-            e passageiros com embarque que não aparecem na base enviada.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.subheader("Cadastrados sem embarque no período")
+    st.subheader("Colaboradores cadastrados que nunca fizeram embarque no período")
     if sem_embarque.empty:
-        st.success("Todos os colaboradores da base filtrada tiveram pelo menos um embarque no período.")
+        st.success("Todos os colaboradores cadastrados tiveram pelo menos um embarque no período analisado.")
     else:
         cols = ["NOME_TRATADO", "LINHA_TRATADA", "TURNO_TRATADO", "DATA_CADASTRO"]
-        st.dataframe(sem_embarque[cols], use_container_width=True, hide_index=True)
+        tabela_sem = sem_embarque[cols].rename(columns={
+            "NOME_TRATADO": "Colaborador",
+            "LINHA_TRATADA": "Linha",
+            "TURNO_TRATADO": "Turno",
+            "DATA_CADASTRO": "Data de cadastro"
+        })
+        st.dataframe(tabela_sem, use_container_width=True, hide_index=True)
 
-    st.subheader("Embarques fora da base de colaboradores")
-    if fora_da_base.empty:
-        st.success("Todos os passageiros embarcados foram encontrados na base de colaboradores.")
-    else:
-        cols = ["PASSAGEIRO_TRATADO", "LINHA_TRATADA", "DATA_HORA_TRATADA", "TIPO_TRATADO", "PREFIXO_TRATADO"]
-        st.dataframe(fora_da_base[cols].drop_duplicates(), use_container_width=True, hide_index=True)
-
-with aba4:
-    st.markdown('<div class="section-title">Dados filtrados</div>', unsafe_allow_html=True)
-
-    st.subheader("Evolução esperada x realizada")
-    st.dataframe(evolucao, use_container_width=True, hide_index=True)
-
-    st.subheader("Base de colaboradores filtrada")
-    st.dataframe(colaboradores_filtrados, use_container_width=True, hide_index=True)
-
-    st.subheader("Embarques filtrados")
-    st.dataframe(embarques_filtrados, use_container_width=True, hide_index=True)
-
-    csv = embarques_filtrados.to_csv(index=False).encode("utf-8-sig")
+    csv_sem = sem_embarque.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
-        "Baixar embarques filtrados em CSV",
-        data=csv,
-        file_name="embarques_filtrados.csv",
-        mime="text/csv"
-    )
-
-    csv_evolucao = evolucao.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        "Baixar evolução esperada x realizada em CSV",
-        data=csv_evolucao,
-        file_name="evolucao_aderencia.csv",
+        "Baixar colaboradores sem embarque em CSV",
+        data=csv_sem,
+        file_name="colaboradores_sem_embarque.csv",
         mime="text/csv"
     )
