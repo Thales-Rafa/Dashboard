@@ -211,3 +211,11 @@ Correções:
 - HTML do cabeçalho e cards de clientes sem indentação.
 - Evita que Streamlit/Markdown interprete o HTML como bloco de código.
 - Mantém logos clicáveis, filtro semanal e datas em português.
+
+
+## V5.20 - Ajuste do cabeçalho do cliente
+
+- Remove duplicidade da logo Famatur no dashboard público do cliente.
+- Cliente vê Famatur no topo esquerdo e sua própria logo no topo direito.
+- Bloco principal do cliente fica mais limpo, apenas com título e subtítulo.
+- ADM mantém logo Famatur dentro do bloco principal e logos clicáveis dos clientes abaixo.

@@ -715,9 +715,17 @@ def render_header(cliente=None):
         cliente_nome = cliente.get("nome", "") or ""
 
     if cliente:
+        # Dashboard público do cliente:
+        # Famatur no topo esquerdo, cliente no topo direito.
         topo = f'<div class="top-brand"><div>{imagem_html(empresa_logo, empresa_nome)}</div><div>{imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""}</div></div>'
         st.markdown(topo, unsafe_allow_html=True)
 
+        hero = '<div class="hero"><div class="hero-title">Dashboard de Aderência de Embarque</div><div class="hero-subtitle">Acompanhamento de aderência do cliente, com evolução semanal, histórico comparativo e controle de colaboradores sem embarque.</div></div>'
+        st.markdown(hero, unsafe_allow_html=True)
+        return
+
+    # Painel ADM:
+    # Logo da Famatur dentro do bloco principal e logos clicáveis dos clientes abaixo.
     logo_html = ""
     if empresa_logo:
         logo_html = f'<div style="margin-bottom:22px;"><img class="brand-logo" src="{empresa_logo}" style="width:96px;height:96px;" /></div>'
@@ -725,8 +733,7 @@ def render_header(cliente=None):
     hero = f'<div class="hero">{logo_html}<div class="hero-title">Dashboard de Aderência de Embarque</div><div class="hero-subtitle">Acompanhamento de aderência por cliente, com histórico comparativo, evolução operacional e controle de colaboradores sem embarque.</div></div>'
     st.markdown(hero, unsafe_allow_html=True)
 
-    if cliente is None:
-        render_clientes_logos_admin()
+    render_clientes_logos_admin()
 
 def render_dashboard_cliente(cliente):
     render_header(cliente)
