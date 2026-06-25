@@ -528,6 +528,24 @@ def historico_semanal_cliente(cliente_id):
 
     return semanal
 
+def comparar_semana_anterior(cliente_id, data_inicio_referencia, aderencia_atual):
+    hist_sem = historico_semanal_cliente(cliente_id)
+    if hist_sem.empty or data_inicio_referencia is None:
+        return None, None
+
+    semana_inicio_atual = pd.to_datetime(data_inicio_referencia)
+    semana_inicio_atual = semana_inicio_atual - pd.to_timedelta(semana_inicio_atual.weekday(), unit="D")
+    semana_inicio_anterior = semana_inicio_atual - pd.Timedelta(days=7)
+
+    anterior = hist_sem[hist_sem["semana_inicio"].dt.date == semana_inicio_anterior.date()]
+
+    if anterior.empty:
+        return None, None
+
+    aderencia_anterior = float(anterior.iloc[0]["aderencia"])
+    variacao = float(aderencia_atual) - aderencia_anterior
+    return aderencia_anterior, variacao
+
 
 def filtrar_metricas_por_periodo(metricas_df, modo_filtro, data_ini=None, data_fim=None):
     if metricas_df.empty:
@@ -961,7 +979,14 @@ def render_dashboard_cliente(cliente):
     else:
         titulo_periodo = f"{filtro_data_ini.strftime('%d/%m/%Y')} até {filtro_data_fim.strftime('%d/%m/%Y')}"
 
-    variacao = atual["aderencia"] - anterior["aderencia"] if anterior else None
+    # Comparativo semanal operacional:
+    # compara a aderência filtrada com a semana operacional anterior.
+    data_referencia_comparativo = filtro_data_ini if filtro_data_ini is not None else data_min_filtro
+    aderencia_semana_anterior, variacao = comparar_semana_anterior(
+        cliente["id"],
+        data_referencia_comparativo,
+        resumo_filtro["aderencia"]
+    )
 
     st.markdown('<div class="section-title">Resumo do período</div>', unsafe_allow_html=True)
 
@@ -969,16 +994,20 @@ def render_dashboard_cliente(cliente):
     with c1:
         kpi_card("Aderência atual", formatar_pct(resumo_filtro["aderencia"]), titulo_periodo)
     with c2:
-        kpi_card("Importação anterior", formatar_pct(anterior["aderencia"]) if anterior else "—", "Comparativo")
+        kpi_card(
+            "Semana anterior",
+            formatar_pct(aderencia_semana_anterior) if aderencia_semana_anterior is not None else "—",
+            "Comparativo semanal"
+        )
     with c3:
         if variacao is None:
             valor_var = "—"
-            caption = "Sem base anterior"
+            caption = "Sem histórico anterior"
         else:
             sinal = "+" if variacao >= 0 else ""
             valor_var = f"{sinal}{formatar_pct(variacao)}"
-            caption = "Variação em pontos percentuais"
-        kpi_card("Variação", valor_var, caption)
+            caption = "Diferença vs. semana anterior"
+        kpi_card("Variação semanal", valor_var, caption)
     with c4:
         kpi_card("Esperado", formatar_num(resumo_filtro["total_esperado"]), "Embarques previstos")
     with c5:

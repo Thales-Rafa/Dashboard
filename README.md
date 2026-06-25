@@ -247,3 +247,11 @@ Correções:
   - realizado da semana
   - aderência semanal
 - A tabela de histórico também passa a mostrar semanas operacionais.
+
+
+## V5.24 - Cards por semana operacional
+
+- Card "Importação anterior" trocado por "Semana anterior".
+- Card "Variação" trocado por "Variação semanal".
+- Comparativo agora usa a semana operacional anterior, não a importação anterior.
+- Se não houver semana anterior salva, aparece "Sem histórico anterior".
