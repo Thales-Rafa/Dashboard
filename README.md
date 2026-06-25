@@ -126,3 +126,19 @@ Período final = maior DATA/HORA encontrada no relatório de embarque
 ```
 
 Isso evita importar um relatório com datas antigas usando uma semana errada e gerar aderência zerada.
+
+
+## V5.6 - Correção definitiva do período automático
+
+A tela de nova importação não possui mais campos manuais de início/fim da semana.
+
+Fluxo correto:
+
+1. Selecionar cliente
+2. Enviar relatório de embarque
+3. Enviar arquivo de colaboradores cadastrados
+4. O sistema identifica automaticamente a menor e maior data do relatório de embarque
+5. O ADM define somente a regra operacional, como dias de operação e embarques por colaborador/dia
+6. Processar e salvar
+
+Isso elimina o erro de salvar importações com período fora do relatório.

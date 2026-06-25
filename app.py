@@ -925,68 +925,50 @@ def render_admin():
             cliente_nome = st.selectbox("Cliente", list(nomes.keys()))
             cliente = nomes[cliente_nome]
 
+            st.markdown(
+                """
+                <div class="info-box">
+                    O período da importação será identificado automaticamente pelo relatório de embarque.
+                    O sistema usa a menor e a maior data encontradas na coluna DATA/HORA do arquivo.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
             rel_embarque = st.file_uploader("Relatório de embarque", type=["xlsx", "xls"], key="rel_embarque_admin")
-            base_colab = st.file_uploader("Arquivo de colaboradores cadastrados", type=["xlsx", "xls"], key="base_colab_admin")
-
-            periodo_min, periodo_max, qtd_linhas_relatorio = periodo_relatorio_embarque(rel_embarque)
-
-            if periodo_min and periodo_max:
-                st.markdown(
-                    f"""
-                    <div class="info-box">
-                        <strong>Período identificado no relatório de embarque:</strong> {periodo_min.strftime('%d/%m/%Y')} até {periodo_max.strftime('%d/%m/%Y')}.
-                        <br>
-                        <strong>Registros encontrados no relatório:</strong> {formatar_num(qtd_linhas_relatorio)}.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                usar_periodo_arquivo = st.checkbox("Usar automaticamente o período identificado no relatório", value=True)
-            else:
-                usar_periodo_arquivo = False
-                if rel_embarque is not None:
-                    st.warning("Não consegui identificar automaticamente o período do relatório. Selecione manualmente.")
-
-            if periodo_min and periodo_max and usar_periodo_arquivo:
-                semana_inicio = periodo_min
-                semana_fim = periodo_max
-                st.info(f"Período selecionado automaticamente: {semana_inicio.strftime('%d/%m/%Y')} até {semana_fim.strftime('%d/%m/%Y')}.")
-            else:
-                rel_embarque = st.file_uploader("Relatório de embarque", type=["xlsx", "xls"], key="rel_embarque_admin")
             base_colab = st.file_uploader("Arquivo de colaboradores cadastrados", type=["xlsx", "xls"], key="base_colab_admin")
 
             semana_inicio = None
             semana_fim = None
+            qtd_registros_relatorio = 0
 
             if rel_embarque is not None:
                 try:
-                    periodo_inicio, periodo_fim, qtd_registros_relatorio = identificar_periodo_relatorio(rel_embarque, cliente["nome"])
-                    semana_inicio = periodo_inicio
-                    semana_fim = periodo_fim
-
+                    semana_inicio, semana_fim, qtd_registros_relatorio = identificar_periodo_relatorio(rel_embarque, cliente["nome"])
                     if semana_inicio is not None and semana_fim is not None:
                         st.success(
-                            f"Período identificado automaticamente no relatório: "
+                            f"Período identificado automaticamente: "
                             f"{semana_inicio.strftime('%d/%m/%Y')} até {semana_fim.strftime('%d/%m/%Y')} "
-                            f"({qtd_registros_relatorio} registros)."
+                            f"({qtd_registros_relatorio} registros no relatório)."
                         )
                     else:
                         st.warning("Não foi possível identificar datas válidas no relatório de embarque.")
                 except Exception as e:
                     st.error(f"Erro ao identificar período do relatório: {e}")
 
-            st.markdown(
-                """
-                <div class="info-box">
-                    O período da importação é definido automaticamente pela menor e maior data encontradas no relatório de embarque.
-                    Assim você não precisa selecionar a semana manualmente.
-                </div>
-                """,
-                unsafe_allow_html=True
+            embarques_por_dia = st.number_input(
+                "Embarques esperados por colaborador/dia",
+                min_value=1,
+                max_value=10,
+                value=2,
+                step=1
             )
 
-            embarques_por_dia = st.number_input("Embarques esperados por colaborador/dia", min_value=1, max_value=10, value=2, step=1)
-            preset = st.selectbox("Dias que a operação roda", ["Segunda a sexta", "Segunda a sábado", "Segunda a domingo", "Personalizado"], index=2)
+            preset = st.selectbox(
+                "Dias que a operação roda",
+                ["Segunda a sexta", "Segunda a sábado", "Segunda a domingo", "Personalizado"],
+                index=2
+            )
 
             if preset == "Segunda a sexta":
                 dias_semana = [0, 1, 2, 3, 4]
@@ -995,37 +977,49 @@ def render_admin():
             elif preset == "Segunda a domingo":
                 dias_semana = [0, 1, 2, 3, 4, 5, 6]
             else:
-                mapa = {"Segunda": 0, "Terça": 1, "Quarta": 2, "Quinta": 3, "Sexta": 4, "Sábado": 5, "Domingo": 6}
+                mapa = {
+                    "Segunda": 0,
+                    "Terça": 1,
+                    "Quarta": 2,
+                    "Quinta": 3,
+                    "Sexta": 4,
+                    "Sábado": 5,
+                    "Domingo": 6,
+                }
                 escolhidos = st.multiselect("Selecione os dias", list(mapa.keys()), default=list(mapa.keys()))
                 dias_semana = [mapa[d] for d in escolhidos]
 
-            if rel_embarque is not None and periodo_min and periodo_max:
-                if semana_fim < periodo_min or semana_inicio > periodo_max:
-                    st.error("O período selecionado não cruza com as datas do relatório de embarque. O realizado ficará zerado.")
-                elif semana_inicio < periodo_min or semana_fim > periodo_max:
-                    st.warning("O período selecionado é maior do que o período encontrado no relatório. Dias sem registro entrarão como realizado zero.")
-
-            importacao_existente = encontrar_importacao_semana(cliente["id"], semana_inicio, semana_fim)
+            importacao_existente = None
+            if semana_inicio is not None and semana_fim is not None:
+                importacao_existente = encontrar_importacao_semana(cliente["id"], semana_inicio, semana_fim)
 
             if importacao_existente:
                 st.warning("Já existe uma importação salva para este cliente e para o mesmo período identificado no relatório.")
-                substituir = st.checkbox("Substituir importação existente deste período/período", value=False)
+                substituir = st.checkbox("Substituir importação existente deste período", value=False)
             else:
                 substituir = False
 
-            if st.button("Processar e salvar período"):
+            if st.button("Processar e salvar período do relatório"):
                 if rel_embarque is None or base_colab is None:
                     st.error("Envie os dois arquivos.")
                 elif semana_inicio is None or semana_fim is None:
                     st.error("Não foi possível identificar o período do relatório de embarque.")
                 elif importacao_existente and not substituir:
-                    st.error("Marque a opção de substituição ou altere o período.")
+                    st.error("Marque a opção de substituição ou altere o arquivo.")
                 else:
                     try:
                         if importacao_existente and substituir:
                             remover_importacao(importacao_existente["id"])
 
-                        registro = salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, rel_embarque, base_colab)
+                        registro = salvar_importacao(
+                            cliente,
+                            semana_inicio,
+                            semana_fim,
+                            dias_semana,
+                            embarques_por_dia,
+                            rel_embarque,
+                            base_colab
+                        )
                         st.success("Período salvo com sucesso.")
                         st.json({
                             "Cliente": registro["cliente_nome"],
