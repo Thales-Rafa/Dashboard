@@ -185,3 +185,14 @@ Correção:
 - Campo de senha ADM saiu da barra lateral.
 - Login agora aparece no centro da página.
 - Após login, o ADM pode sair pelo botão na lateral.
+
+
+## V5.16 - Semanal + logos no ADM
+
+- Datas em português no formato DD/MM/AAAA.
+- Filtro padrão do dashboard público agora é semanal.
+- Mantém filtro por dia e intervalo personalizado.
+- Logo da empresa aparece dentro do bloco principal do dashboard no ADM.
+- Abaixo do subtítulo do ADM aparecem as logos dos clientes cadastrados.
+- Cada logo de cliente é clicável e abre o dashboard público daquele cliente.
+- Visual reforçado em azul escuro, branco e cinza claro.

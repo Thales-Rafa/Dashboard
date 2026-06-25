@@ -206,6 +206,72 @@ st.markdown(
         .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
     
 
+
+.client-logo-section {
+    margin-top: 24px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(229,231,235,0.12);
+}
+.client-logo-section-title {
+    color: #E5E7EB;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+.client-logo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.client-logo-card {
+    width: 145px;
+    min-height: 126px;
+    border: 1px solid rgba(229,231,235,0.16);
+    background: rgba(15,23,42,0.78);
+    border-radius: 20px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none !important;
+    transition: all .18s ease;
+}
+.client-logo-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(96,165,250,0.62);
+    background: rgba(30,58,95,0.46);
+}
+.client-logo-img {
+    width: 78px;
+    height: 68px;
+    object-fit: contain;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    padding: 8px;
+}
+.client-logo-placeholder {
+    width: 78px;
+    height: 68px;
+    border-radius: 14px;
+    background: #1E3A5F;
+    color: white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 24px;
+    font-weight: 900;
+}
+.client-logo-card span {
+    color: #F9FAFB;
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 10px;
+}
+
     </style>
     """,
     unsafe_allow_html=True
@@ -602,6 +668,57 @@ def gerar_link_cliente(cliente):
         app_url = "COLE-A-URL-PUBLICA-DO-APP-NAS-CONFIGURACOES"
     return f"{app_url}/?cliente={cliente['slug']}&token={cliente['token']}"
 
+def gerar_opcoes_semanais(metricas_df):
+    if metricas_df.empty:
+        return {}
+
+    temp = metricas_df.copy()
+    temp["data"] = pd.to_datetime(temp["data"])
+    temp["semana_inicio"] = temp["data"] - pd.to_timedelta(temp["data"].dt.weekday, unit="D")
+    temp["semana_fim"] = temp["semana_inicio"] + pd.Timedelta(days=6)
+
+    semanas = temp[["semana_inicio", "semana_fim"]].drop_duplicates().sort_values("semana_inicio")
+
+    opcoes = {}
+    for _, row in semanas.iterrows():
+        label = f"Semana {row['semana_inicio'].strftime('%d/%m/%Y')} até {row['semana_fim'].strftime('%d/%m/%Y')}"
+        opcoes[label] = (row["semana_inicio"].date(), row["semana_fim"].date())
+    return opcoes
+
+def html_logo_cliente(cliente):
+    nome = cliente.get("nome", "Cliente")
+    logo = cliente.get("logo", "") or ""
+    link = gerar_link_cliente(cliente)
+
+    if logo:
+        logo_html = f'<img class="client-logo-img" src="{logo}" />'
+    else:
+        iniciais = "".join([p[:1] for p in nome.split()[:2]]).upper()
+        logo_html = f'<div class="client-logo-placeholder">{iniciais}</div>'
+
+    return f"""
+    <a class="client-logo-card" href="{link}" target="_blank" title="Abrir dashboard público de {nome}">
+        {logo_html}
+        <span>{nome}</span>
+    </a>
+    """
+
+def render_clientes_logos_admin():
+    clientes_ativos = [c for c in db.get("clientes", []) if c.get("ativo", True)]
+    if not clientes_ativos:
+        return ""
+
+    cards = "".join([html_logo_cliente(c) for c in clientes_ativos])
+    return f"""
+    <div class="client-logo-section">
+        <div class="client-logo-section-title">Dashboards dos clientes</div>
+        <div class="client-logo-grid">
+            {cards}
+        </div>
+    </div>
+    """
+
+
 def salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, embarques_file, colaboradores_file):
     try:
         embarques_file.seek(0)
@@ -717,21 +834,37 @@ def render_header(cliente=None):
         cliente_logo = cliente.get("logo", "") or ""
         cliente_nome = cliente.get("nome", "") or ""
 
-    empresa_html = imagem_html(empresa_logo, empresa_nome)
-    cliente_html = imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""
+    if cliente:
+        topo_marcas = f"""
+        <div class="top-brand">
+            <div>{imagem_html(empresa_logo, empresa_nome)}</div>
+            <div>{imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""}</div>
+        </div>
+        """
+        logos_clientes_html = ""
+    else:
+        topo_marcas = ""
+        logos_clientes_html = render_clientes_logos_admin()
+
+    empresa_logo_hero = ""
+    if empresa_logo:
+        empresa_logo_hero = f"""
+        <div style="margin-bottom: 22px;">
+            <img class="brand-logo" src="{empresa_logo}" style="width: 96px; height: 96px;" />
+        </div>
+        """
 
     st.markdown(
         f"""
-        <div class="top-brand">
-            <div>{empresa_html}</div>
-            <div>{cliente_html}</div>
-        </div>
+        {topo_marcas}
         <div class="hero">
+            {empresa_logo_hero}
             <div class="hero-title">Dashboard de Aderência de Embarque</div>
             <div class="hero-subtitle">
                 Acompanhamento de aderência por cliente, com histórico comparativo,
                 evolução operacional e controle de colaboradores sem embarque.
             </div>
+            {logos_clientes_html}
         </div>
         """,
         unsafe_allow_html=True
@@ -758,25 +891,46 @@ def render_dashboard_cliente(cliente):
 
     st.markdown('<div class="section-title">Filtros</div>', unsafe_allow_html=True)
 
-    col_filtro1, col_filtro2, col_filtro3 = st.columns([1.1, 1.2, 1.7])
+    opcoes_semanais = gerar_opcoes_semanais(metricas_base)
+    col_filtro1, col_filtro2, col_filtro3 = st.columns([1.1, 1.4, 1.5])
 
     with col_filtro1:
         modo_filtro = st.selectbox(
             "Visualizar",
-            ["Todo o período", "Por dia", "Intervalo personalizado"],
+            ["Por semana", "Todo o período", "Por dia", "Intervalo personalizado"],
             index=0
         )
 
     filtro_data_ini = None
     filtro_data_fim = None
 
-    if modo_filtro == "Por dia":
+    if modo_filtro == "Por semana":
+        with col_filtro2:
+            if opcoes_semanais:
+                semana_label = st.selectbox("Semana", list(opcoes_semanais.keys()), index=len(opcoes_semanais) - 1)
+                filtro_data_ini, filtro_data_fim = opcoes_semanais[semana_label]
+            else:
+                semana_label = "Sem semanas disponíveis"
+                filtro_data_ini, filtro_data_fim = data_min_filtro, data_max_filtro
+
+        with col_filtro3:
+            st.markdown(
+                f"""
+                <div class="info-box">
+                    Visualização semanal ativa. {semana_label}.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    elif modo_filtro == "Por dia":
         with col_filtro2:
             filtro_data_ini = st.date_input(
                 "Dia",
                 value=data_min_filtro,
                 min_value=data_min_filtro,
-                max_value=data_max_filtro
+                max_value=data_max_filtro,
+                format="DD/MM/YYYY"
             )
         with col_filtro3:
             st.markdown(
@@ -794,7 +948,8 @@ def render_dashboard_cliente(cliente):
                 "Intervalo",
                 value=(data_min_filtro, data_max_filtro),
                 min_value=data_min_filtro,
-                max_value=data_max_filtro
+                max_value=data_max_filtro,
+                format="DD/MM/YYYY"
             )
 
         if isinstance(filtro_intervalo, tuple) and len(filtro_intervalo) == 2:
@@ -823,11 +978,14 @@ def render_dashboard_cliente(cliente):
                 unsafe_allow_html=True
             )
 
-    metricas_filtradas = filtrar_metricas_por_periodo(metricas_base, modo_filtro, filtro_data_ini, filtro_data_fim)
+    if modo_filtro == "Por semana":
+        metricas_filtradas = filtrar_metricas_por_periodo(metricas_base, "Intervalo personalizado", filtro_data_ini, filtro_data_fim)
+    else:
+        metricas_filtradas = filtrar_metricas_por_periodo(metricas_base, modo_filtro, filtro_data_ini, filtro_data_fim)
     resumo_filtro = recalcular_resumo_metricas(metricas_filtradas, atual)
 
     if modo_filtro == "Todo o período":
-        titulo_periodo = f"{atual['semana_inicio']} até {atual['semana_fim']}"
+        titulo_periodo = f"{pd.to_datetime(atual['semana_inicio']).strftime('%d/%m/%Y')} até {pd.to_datetime(atual['semana_fim']).strftime('%d/%m/%Y')}"
     elif modo_filtro == "Por dia":
         titulo_periodo = filtro_data_ini.strftime("%d/%m/%Y")
     else:
@@ -914,13 +1072,13 @@ def render_dashboard_cliente(cliente):
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=metricas["data"], y=metricas["esperado"], mode="lines", name="Esperado", line=dict(color=LIGHT_GRAY, width=2, dash="dash")))
             fig.add_trace(go.Scatter(x=metricas["data"], y=metricas["realizado"], mode="lines+markers", name="Realizado", line=dict(color=BLUE, width=3), marker=dict(size=7, color=WHITE, line=dict(color=BLUE, width=2)), fill="tozeroy", fillcolor="rgba(96,165,250,0.10)"))
-            fig.update_xaxes(title_text="Data")
+            fig.update_xaxes(title_text="Data", tickformat="%d/%m/%Y")
             fig.update_yaxes(title_text="Quantidade de embarques")
             st.plotly_chart(aplicar_layout(fig, "Esperado x realizado por dia"), use_container_width=True)
 
             fig2 = go.Figure()
             fig2.add_trace(go.Scatter(x=metricas["data"], y=metricas["aderencia"], mode="lines+markers", name="Aderência", line=dict(color=BLUE, width=3), marker=dict(size=7, color=WHITE, line=dict(color=BLUE, width=2))))
-            fig2.update_xaxes(title_text="Data")
+            fig2.update_xaxes(title_text="Data", tickformat="%d/%m/%Y")
             fig2.update_yaxes(title_text="Aderência (%)")
             st.plotly_chart(aplicar_layout(fig2, "Aderência diária"), use_container_width=True)
 
@@ -933,13 +1091,15 @@ def render_dashboard_cliente(cliente):
             hist = hist.sort_values("semana_inicio_dt")
             fig_hist = go.Figure()
             fig_hist.add_trace(go.Scatter(x=hist["semana_inicio_dt"], y=hist["aderencia"], mode="lines+markers", name="Aderência por importação", line=dict(color=BLUE, width=3), marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2))))
-            fig_hist.update_xaxes(title_text="Semana")
+            fig_hist.update_xaxes(title_text="Semana", tickformat="%d/%m/%Y")
             fig_hist.update_yaxes(title_text="Aderência (%)")
             st.plotly_chart(aplicar_layout(fig_hist, "Histórico por importação de aderência"), use_container_width=True)
 
-            tabela = hist[["semana_inicio", "semana_fim", "colaboradores_cadastrados", "dias_operacao", "total_esperado", "total_realizado", "aderencia", "faltas_estimadas", "colaboradores_sem_embarque", "data_importacao"]].rename(columns={
-                "semana_inicio": "Semana início",
-                "semana_fim": "Semana fim",
+            hist["semana_inicio_fmt"] = pd.to_datetime(hist["semana_inicio"]).dt.strftime("%d/%m/%Y")
+            hist["semana_fim_fmt"] = pd.to_datetime(hist["semana_fim"]).dt.strftime("%d/%m/%Y")
+            tabela = hist[["semana_inicio_fmt", "semana_fim_fmt", "colaboradores_cadastrados", "dias_operacao", "total_esperado", "total_realizado", "aderencia", "faltas_estimadas", "colaboradores_sem_embarque", "data_importacao"]].rename(columns={
+                "semana_inicio_fmt": "Semana início",
+                "semana_fim_fmt": "Semana fim",
                 "colaboradores_cadastrados": "Colaboradores",
                 "dias_operacao": "Dias operação",
                 "total_esperado": "Esperado",
@@ -1264,8 +1424,8 @@ def render_admin():
                     "total_esperado", "total_realizado", "aderencia", "colaboradores_sem_embarque"
                 ]].rename(columns={
                     "id": "ID",
-                    "semana_inicio": "Semana início",
-                    "semana_fim": "Semana fim",
+                    "semana_inicio_fmt": "Semana início",
+                    "semana_fim_fmt": "Semana fim",
                     "data_importacao": "Importado em",
                     "total_esperado": "Esperado",
                     "total_realizado": "Realizado",
