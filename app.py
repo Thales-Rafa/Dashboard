@@ -183,6 +183,15 @@ st.markdown(
             border: 1px solid {BORDER};
         }}
         .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
+    
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        [data-testid="stToolbar"] {visibility: hidden !important; height: 0% !important; position: fixed;}
+        [data-testid="stDecoration"] {visibility: hidden;}
+        [data-testid="stStatusWidget"] {visibility: hidden;}
+        .stDeployButton {display: none;}
+
     </style>
     """,
     unsafe_allow_html=True
@@ -395,6 +404,60 @@ def metricas_importacao(importacao_id):
 
 def sem_embarque_importacao(importacao_id):
     return [s for s in db["sem_embarque"] if s["importacao_id"] == importacao_id]
+
+def filtrar_metricas_por_periodo(metricas_df, modo_filtro, data_ini=None, data_fim=None):
+    if metricas_df.empty:
+        return metricas_df
+
+    metricas_df = metricas_df.copy()
+    metricas_df["data"] = pd.to_datetime(metricas_df["data"])
+
+    if modo_filtro == "Todo o período":
+        return metricas_df
+
+    if modo_filtro == "Por dia" and data_ini is not None:
+        data_ini = pd.to_datetime(data_ini)
+        return metricas_df[metricas_df["data"].dt.date == data_ini.date()].copy()
+
+    if modo_filtro == "Intervalo personalizado" and data_ini is not None and data_fim is not None:
+        data_ini = pd.to_datetime(data_ini)
+        data_fim = pd.to_datetime(data_fim)
+        return metricas_df[
+            (metricas_df["data"] >= data_ini) &
+            (metricas_df["data"] <= data_fim)
+        ].copy()
+
+    return metricas_df
+
+def recalcular_resumo_metricas(metricas_df, importacao):
+    if metricas_df.empty:
+        return {
+            "total_esperado": 0,
+            "total_realizado": 0,
+            "aderencia": 0,
+            "faltas_estimadas": 0,
+            "dias_operacao": 0,
+            "colaboradores_cadastrados": importacao.get("colaboradores_cadastrados", 0),
+            "colaboradores_que_embarcaram": importacao.get("colaboradores_que_embarcaram", 0),
+            "colaboradores_sem_embarque": importacao.get("colaboradores_sem_embarque", 0),
+        }
+
+    total_esperado = int(metricas_df["esperado"].sum())
+    total_realizado = int(metricas_df["realizado"].sum())
+    aderencia = (total_realizado / total_esperado * 100) if total_esperado else 0
+    faltas = max(total_esperado - total_realizado, 0)
+
+    return {
+        "total_esperado": total_esperado,
+        "total_realizado": total_realizado,
+        "aderencia": aderencia,
+        "faltas_estimadas": faltas,
+        "dias_operacao": int(metricas_df.shape[0]),
+        "colaboradores_cadastrados": int(metricas_df["colaboradores_cadastrados"].max()) if "colaboradores_cadastrados" in metricas_df.columns and not metricas_df.empty else importacao.get("colaboradores_cadastrados", 0),
+        "colaboradores_que_embarcaram": importacao.get("colaboradores_que_embarcaram", 0),
+        "colaboradores_sem_embarque": importacao.get("colaboradores_sem_embarque", 0),
+    }
+
 
 def remover_importacao(importacao_id):
     db["importacoes"] = [i for i in db["importacoes"] if i["id"] != importacao_id]
@@ -653,13 +716,61 @@ def render_dashboard_cliente(cliente):
         st.info("Ainda não há importações salvas para este cliente.")
         return
 
+    metricas_base = pd.DataFrame(metricas_importacao(atual["id"]))
+    if not metricas_base.empty:
+        metricas_base["data"] = pd.to_datetime(metricas_base["data"])
+        data_min_filtro = metricas_base["data"].min().date()
+        data_max_filtro = metricas_base["data"].max().date()
+    else:
+        data_min_filtro = date.today()
+        data_max_filtro = date.today()
+
+    st.sidebar.markdown("### Filtros do cliente")
+    modo_filtro = st.sidebar.radio(
+        "Visualizar",
+        ["Todo o período", "Por dia", "Intervalo personalizado"],
+        index=0
+    )
+
+    filtro_data_ini = None
+    filtro_data_fim = None
+
+    if modo_filtro == "Por dia":
+        filtro_data_ini = st.sidebar.date_input(
+            "Dia",
+            value=data_min_filtro,
+            min_value=data_min_filtro,
+            max_value=data_max_filtro
+        )
+    elif modo_filtro == "Intervalo personalizado":
+        filtro_intervalo = st.sidebar.date_input(
+            "Intervalo",
+            value=(data_min_filtro, data_max_filtro),
+            min_value=data_min_filtro,
+            max_value=data_max_filtro
+        )
+        if isinstance(filtro_intervalo, tuple) and len(filtro_intervalo) == 2:
+            filtro_data_ini, filtro_data_fim = filtro_intervalo
+        else:
+            filtro_data_ini, filtro_data_fim = data_min_filtro, data_max_filtro
+
+    metricas_filtradas = filtrar_metricas_por_periodo(metricas_base, modo_filtro, filtro_data_ini, filtro_data_fim)
+    resumo_filtro = recalcular_resumo_metricas(metricas_filtradas, atual)
+
+    if modo_filtro == "Todo o período":
+        titulo_periodo = titulo_periodo
+    elif modo_filtro == "Por dia":
+        titulo_periodo = filtro_data_ini.strftime("%d/%m/%Y")
+    else:
+        titulo_periodo = f"{filtro_data_ini.strftime('%d/%m/%Y')} até {filtro_data_fim.strftime('%d/%m/%Y')}"
+
     variacao = atual["aderencia"] - anterior["aderencia"] if anterior else None
 
     st.markdown('<div class="section-title">Resumo do período</div>', unsafe_allow_html=True)
 
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
-        kpi_card("Aderência atual", formatar_pct(atual["aderencia"]), f"{atual['semana_inicio']} até {atual['semana_fim']}")
+        kpi_card("Aderência atual", formatar_pct(resumo_filtro["aderencia"]), titulo_periodo)
     with c2:
         kpi_card("Importação anterior", formatar_pct(anterior["aderencia"]) if anterior else "—", "Comparativo")
     with c3:
@@ -672,17 +783,17 @@ def render_dashboard_cliente(cliente):
             caption = "Variação em pontos percentuais"
         kpi_card("Variação", valor_var, caption)
     with c4:
-        kpi_card("Esperado", formatar_num(atual["total_esperado"]), "Embarques previstos")
+        kpi_card("Esperado", formatar_num(resumo_filtro["total_esperado"]), "Embarques previstos")
     with c5:
-        kpi_card("Realizado", formatar_num(atual["total_realizado"]), "Embarques realizados")
+        kpi_card("Realizado", formatar_num(resumo_filtro["total_realizado"]), "Embarques realizados")
     with c6:
-        kpi_card("Sem embarque", formatar_num(atual["colaboradores_sem_embarque"]), "Colaboradores cadastrados")
+        kpi_card("Sem embarque", formatar_num(resumo_filtro["colaboradores_sem_embarque"]), "Colaboradores cadastrados")
 
     st.markdown(
         f"""
         <div class="info-box">
-            <strong>Regra do período:</strong> {formatar_num(atual['colaboradores_cadastrados'])} colaboradores cadastrados × 
-            {atual['embarques_por_colaborador_dia']} embarques por colaborador/dia × {atual['dias_operacao']} dias de operação.
+            <strong>Regra do período:</strong> {formatar_num(resumo_filtro['colaboradores_cadastrados'])} colaboradores cadastrados × 
+            {atual['embarques_por_colaborador_dia']} embarques por colaborador/dia × {resumo_filtro['dias_operacao']} dias filtrados.
             <br>
             <strong>Última atualização:</strong> {atual['data_importacao']}.
         </div>
@@ -727,7 +838,7 @@ def render_dashboard_cliente(cliente):
     aba1, aba2, aba3 = st.tabs(["Visão do período", "Histórico", "Colaboradores sem embarque"])
 
     with aba1:
-        metricas = pd.DataFrame(metricas_importacao(atual["id"]))
+        metricas = metricas_filtradas.copy()
         if not metricas.empty:
             metricas["data"] = pd.to_datetime(metricas["data"])
 

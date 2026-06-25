@@ -142,3 +142,18 @@ Fluxo correto:
 6. Processar e salvar
 
 Isso elimina o erro de salvar importações com período fora do relatório.
+
+
+## V5.7 - Filtros e limpeza visual
+
+Novidades:
+
+- Filtro lateral no dashboard do cliente:
+  - Todo o período
+  - Por dia
+  - Intervalo personalizado
+- Cards de resumo recalculados conforme o filtro escolhido
+- Gráficos de esperado x realizado e aderência diária respeitam o filtro
+- CSS para ocultar elementos padrão do Streamlit, como menu, rodapé e toolbar quando possível
+
+Observação: em alguns ambientes do Streamlit Cloud, o botão Share pode continuar aparecendo por limitação da própria plataforma.
