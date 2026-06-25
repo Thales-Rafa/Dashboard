@@ -347,7 +347,7 @@ def aplicar_layout(fig, titulo=None):
         xaxis=dict(showgrid=False, zeroline=False, color=MUTED, linecolor=BORDER),
         yaxis=dict(showgrid=True, gridcolor="rgba(229,231,235,0.10)", zeroline=False, color=MUTED, linecolor=BORDER),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=LIGHT_GRAY)),
-        hoverlabel=dict(bgcolor=CARD_BG, bordercolor=BLUE, font=dict(color=WHITE))
+        hoverlabel=dict(bgcolor=CARD_BG, bordercolor=BLUE, font=dict(color=WHITE, size=13))
     )
     return fig
 
@@ -1111,7 +1111,8 @@ def render_dashboard_cliente(cliente):
                 mode="lines+markers",
                 name="Aderência semanal",
                 line=dict(color=BLUE, width=3),
-                marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2))
+                marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2)),
+                hovertemplate="Semana: %{x|%d/%m/%Y}<br>Aderência semanal: %{y:.2f}%<extra></extra>"
             ))
             fig_hist.update_xaxes(title_text="Semana operacional", tickformat="%d/%m/%Y")
             fig_hist.update_yaxes(title_text="Aderência semanal (%)")

@@ -255,3 +255,15 @@ Correções:
 - Card "Variação" trocado por "Variação semanal".
 - Comparativo agora usa a semana operacional anterior, não a importação anterior.
 - Se não houver semana anterior salva, aparece "Sem histórico anterior".
+
+
+## V5.25 - Tooltips em português
+
+- Corrigido tooltip padrão do Plotly que mostrava `(data, valor)`.
+- Tooltips agora aparecem em português:
+  - Data
+  - Semana
+  - Esperado
+  - Realizado
+  - Aderência
+- Percentuais aparecem com símbolo `%`.
