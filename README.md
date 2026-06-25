@@ -112,3 +112,17 @@ Correções:
 - Permite usar automaticamente o período encontrado no arquivo.
 - Mostra alerta quando o período selecionado não bate com as datas do relatório.
 - Evita importações com realizado zerado por período selecionado errado.
+
+
+## V5.5 - Período automático
+
+Nesta versão o ADM não escolhe mais manualmente a semana/período da importação.
+
+O sistema identifica automaticamente:
+
+```text
+Período inicial = menor DATA/HORA encontrada no relatório de embarque
+Período final = maior DATA/HORA encontrada no relatório de embarque
+```
+
+Isso evita importar um relatório com datas antigas usando uma semana errada e gerar aderência zerada.

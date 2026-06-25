@@ -306,6 +306,22 @@ def periodo_relatorio_embarque(uploaded_file):
 
     return datas.dt.date.min(), datas.dt.date.max(), int(datas.shape[0])
 
+
+def identificar_periodo_relatorio(uploaded_file, cliente_nome):
+    if uploaded_file is None:
+        return None, None, 0
+
+    posicao = uploaded_file.tell()
+    uploaded_file.seek(0)
+    df_temp = pd.read_excel(uploaded_file)
+    uploaded_file.seek(posicao)
+
+    df_temp = preparar_embarques(df_temp, cliente_nome)
+    if df_temp.empty:
+        return None, None, 0
+
+    return df_temp["DATA"].min(), df_temp["DATA"].max(), int(df_temp.shape[0])
+
 def preparar_embarques(df, cliente_nome):
     df = limpar_colunas(df)
     mapa = {
@@ -639,13 +655,13 @@ def render_dashboard_cliente(cliente):
 
     variacao = atual["aderencia"] - anterior["aderencia"] if anterior else None
 
-    st.markdown('<div class="section-title">Resumo semanal</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Resumo do período</div>', unsafe_allow_html=True)
 
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
         kpi_card("Aderência atual", formatar_pct(atual["aderencia"]), f"{atual['semana_inicio']} até {atual['semana_fim']}")
     with c2:
-        kpi_card("Semana anterior", formatar_pct(anterior["aderencia"]) if anterior else "—", "Comparativo")
+        kpi_card("Importação anterior", formatar_pct(anterior["aderencia"]) if anterior else "—", "Comparativo")
     with c3:
         if variacao is None:
             valor_var = "—"
@@ -654,7 +670,7 @@ def render_dashboard_cliente(cliente):
             sinal = "+" if variacao >= 0 else ""
             valor_var = f"{sinal}{formatar_pct(variacao)}"
             caption = "Variação em pontos percentuais"
-        kpi_card("Variação semanal", valor_var, caption)
+        kpi_card("Variação", valor_var, caption)
     with c4:
         kpi_card("Esperado", formatar_num(atual["total_esperado"]), "Embarques previstos")
     with c5:
@@ -665,7 +681,7 @@ def render_dashboard_cliente(cliente):
     st.markdown(
         f"""
         <div class="info-box">
-            <strong>Regra da semana:</strong> {formatar_num(atual['colaboradores_cadastrados'])} colaboradores cadastrados × 
+            <strong>Regra do período:</strong> {formatar_num(atual['colaboradores_cadastrados'])} colaboradores cadastrados × 
             {atual['embarques_por_colaborador_dia']} embarques por colaborador/dia × {atual['dias_operacao']} dias de operação.
             <br>
             <strong>Última atualização:</strong> {atual['data_importacao']}.
@@ -708,7 +724,7 @@ def render_dashboard_cliente(cliente):
         st.subheader("Resumo")
         st.dataframe(tabela_resumo_adesao(atual), use_container_width=True, hide_index=True)
 
-    aba1, aba2, aba3 = st.tabs(["Visão semanal", "Histórico", "Colaboradores sem embarque"])
+    aba1, aba2, aba3 = st.tabs(["Visão do período", "Histórico", "Colaboradores sem embarque"])
 
     with aba1:
         metricas = pd.DataFrame(metricas_importacao(atual["id"]))
@@ -736,10 +752,10 @@ def render_dashboard_cliente(cliente):
             hist["semana_inicio_dt"] = pd.to_datetime(hist["semana_inicio"])
             hist = hist.sort_values("semana_inicio_dt")
             fig_hist = go.Figure()
-            fig_hist.add_trace(go.Scatter(x=hist["semana_inicio_dt"], y=hist["aderencia"], mode="lines+markers", name="Aderência semanal", line=dict(color=BLUE, width=3), marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2))))
+            fig_hist.add_trace(go.Scatter(x=hist["semana_inicio_dt"], y=hist["aderencia"], mode="lines+markers", name="Aderência por importação", line=dict(color=BLUE, width=3), marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2))))
             fig_hist.update_xaxes(title_text="Semana")
             fig_hist.update_yaxes(title_text="Aderência (%)")
-            st.plotly_chart(aplicar_layout(fig_hist, "Histórico semanal de aderência"), use_container_width=True)
+            st.plotly_chart(aplicar_layout(fig_hist, "Histórico por importação de aderência"), use_container_width=True)
 
             tabela = hist[["semana_inicio", "semana_fim", "colaboradores_cadastrados", "dias_operacao", "total_esperado", "total_realizado", "aderencia", "faltas_estimadas", "colaboradores_sem_embarque", "data_importacao"]].rename(columns={
                 "semana_inicio": "Semana início",
@@ -786,7 +802,7 @@ def render_admin():
         with c1:
             kpi_card("Clientes cadastrados", formatar_num(total_clientes), "Dashboards ativos")
         with c2:
-            kpi_card("Importações salvas", formatar_num(total_importacoes), "Histórico semanal")
+            kpi_card("Importações salvas", formatar_num(total_importacoes), "Histórico por importação")
         with c3:
             kpi_card("Média geral", formatar_pct(media_aderencia), "Média das importações")
 
@@ -936,13 +952,38 @@ def render_admin():
                 semana_fim = periodo_max
                 st.info(f"Período selecionado automaticamente: {semana_inicio.strftime('%d/%m/%Y')} até {semana_fim.strftime('%d/%m/%Y')}.")
             else:
-                col_data1, col_data2 = st.columns(2)
-                valor_inicio = periodo_min if periodo_min else date.today()
-                valor_fim = periodo_max if periodo_max else date.today()
-                with col_data1:
-                    semana_inicio = st.date_input("Início da semana/período", value=valor_inicio)
-                with col_data2:
-                    semana_fim = st.date_input("Fim da semana/período", value=valor_fim)
+                rel_embarque = st.file_uploader("Relatório de embarque", type=["xlsx", "xls"], key="rel_embarque_admin")
+            base_colab = st.file_uploader("Arquivo de colaboradores cadastrados", type=["xlsx", "xls"], key="base_colab_admin")
+
+            semana_inicio = None
+            semana_fim = None
+
+            if rel_embarque is not None:
+                try:
+                    periodo_inicio, periodo_fim, qtd_registros_relatorio = identificar_periodo_relatorio(rel_embarque, cliente["nome"])
+                    semana_inicio = periodo_inicio
+                    semana_fim = periodo_fim
+
+                    if semana_inicio is not None and semana_fim is not None:
+                        st.success(
+                            f"Período identificado automaticamente no relatório: "
+                            f"{semana_inicio.strftime('%d/%m/%Y')} até {semana_fim.strftime('%d/%m/%Y')} "
+                            f"({qtd_registros_relatorio} registros)."
+                        )
+                    else:
+                        st.warning("Não foi possível identificar datas válidas no relatório de embarque.")
+                except Exception as e:
+                    st.error(f"Erro ao identificar período do relatório: {e}")
+
+            st.markdown(
+                """
+                <div class="info-box">
+                    O período da importação é definido automaticamente pela menor e maior data encontradas no relatório de embarque.
+                    Assim você não precisa selecionar a semana manualmente.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
             embarques_por_dia = st.number_input("Embarques esperados por colaborador/dia", min_value=1, max_value=10, value=2, step=1)
             preset = st.selectbox("Dias que a operação roda", ["Segunda a sexta", "Segunda a sábado", "Segunda a domingo", "Personalizado"], index=2)
@@ -967,16 +1008,16 @@ def render_admin():
             importacao_existente = encontrar_importacao_semana(cliente["id"], semana_inicio, semana_fim)
 
             if importacao_existente:
-                st.warning("Já existe uma importação salva para este cliente e este período.")
-                substituir = st.checkbox("Substituir importação existente desta semana/período", value=False)
+                st.warning("Já existe uma importação salva para este cliente e para o mesmo período identificado no relatório.")
+                substituir = st.checkbox("Substituir importação existente deste período/período", value=False)
             else:
                 substituir = False
 
             if st.button("Processar e salvar período"):
                 if rel_embarque is None or base_colab is None:
                     st.error("Envie os dois arquivos.")
-                elif semana_fim < semana_inicio:
-                    st.error("A data final não pode ser menor que a inicial.")
+                elif semana_inicio is None or semana_fim is None:
+                    st.error("Não foi possível identificar o período do relatório de embarque.")
                 elif importacao_existente and not substituir:
                     st.error("Marque a opção de substituição ou altere o período.")
                 else:
