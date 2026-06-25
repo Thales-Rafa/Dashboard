@@ -213,45 +213,10 @@ Correções:
 - Mantém logos clicáveis, filtro semanal e datas em português.
 
 
-## V5.21 - Tema claro revisado completo
+## V5.20 - Visual corporativo claro
 
-Revisão visual completa:
-- Fundo claro.
-- Cards brancos.
-- Inputs, selects, uploads e botões revisados.
-- Tabelas e dataframes com estilo claro.
-- Gráficos Plotly com fundo claro.
-- Paleta: branco, cinza claro e azul escuro.
-- Cabeçalho sem duplicação visual.
-- Mantém filtros semanais, personalizados, CRUD e logos clicáveis.
-
-
-## V5.22 - Tema claro total
-
-Correções:
-- Adicionado `.streamlit/config.toml` forçando tema claro nativo do Streamlit.
-- Revisão agressiva de CSS para inputs, uploads, botões, selects, tabs e tabelas.
-- Tabelas principais convertidas para `st.table` para evitar dataframe escuro.
-- Gráficos em tema claro.
-- Mantém filtros semanais, CRUD, logos clicáveis e datas em português.
-
-## Correção importante de deploy
-
-O arquivo `app.py` precisa ficar na raiz do projeto e começar com código Python, por exemplo:
-
-```python
-import streamlit as st
-```
-
-O conteúdo abaixo não pode ficar dentro do `app.py`:
-
-```toml
-[theme]
-base = "light"
-```
-
-Esse conteúdo fica exclusivamente em:
-
-```text
-.streamlit/config.toml
-```
+- Tema visual alterado para branco, cinza claro e azul escuro.
+- Cards e gráficos com fundo claro.
+- Logo da Famatur não duplica dentro do hero no dashboard do cliente.
+- No ADM, logo da Famatur permanece dentro do bloco principal.
+- Mantém logos clicáveis dos clientes.

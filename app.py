@@ -13,346 +13,84 @@ st.set_page_config(page_title="Dashboard de Aderência", layout="wide")
 
 st.markdown("""
 <style>
-:root {
-    --bg: #F3F6FA;
-    --surface: #FFFFFF;
-    --surface-2: #F8FAFC;
-    --border: #D8E0EA;
-    --text: #0B2A4A;
-    --muted: #5F6F85;
-    --blue: #0B2A4A;
-    --blue-2: #1F5FAE;
-    --soft-blue: #EAF2FF;
-}
-
-/* BASE */
-.stApp, body, html {
-    background: var(--bg) !important;
-    color: var(--text) !important;
-    font-family: "Inter", "Segoe UI", Arial, sans-serif !important;
-}
-
-.block-container {
-    padding-top: 2rem !important;
-    padding-bottom: 3rem !important;
-    max-width: 1380px !important;
-}
-
-#MainMenu, footer, header, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], .stDeployButton {
-    visibility: hidden !important;
-    display: none !important;
-}
-
-/* SIDEBAR */
-section[data-testid="stSidebar"] {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
-}
-section[data-testid="stSidebar"] * {
-    color: var(--text) !important;
-}
-
-/* TEXTOS */
-h1, h2, h3, h4, h5, h6, p, label, span {
-    color: var(--text) !important;
-}
-h1, h2, h3 {
-    letter-spacing: -0.03em !important;
-}
-.section-title {
-    font-size: 24px !important;
-    font-weight: 850 !important;
-    color: var(--blue) !important;
-    margin: 28px 0 16px 0 !important;
-}
-
-/* HEADER */
-.top-brand {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 24px !important;
-    margin-bottom: 22px !important;
-}
-.brand-box {
-    display: flex !important;
-    align-items: center !important;
-    gap: 14px !important;
-}
-.brand-logo {
-    width: 72px !important;
-    height: 72px !important;
-    border-radius: 18px !important;
-    object-fit: contain !important;
-    background: #FFFFFF !important;
-    border: 1px solid var(--border) !important;
-    padding: 8px !important;
-    box-shadow: 0 10px 24px rgba(11,42,74,0.08) !important;
-}
-.brand-name {
-    color: var(--blue) !important;
-    font-size: 13px !important;
-    font-weight: 850 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
-}
-
-/* HERO */
-.hero {
-    background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%) !important;
-    border: 1px solid var(--border) !important;
-    border-left: 8px solid var(--blue) !important;
-    border-radius: 26px !important;
-    padding: 34px 38px !important;
-    margin-bottom: 28px !important;
-    box-shadow: 0 18px 45px rgba(11,42,74,0.10) !important;
-}
-.hero-title {
-    font-size: 42px !important;
-    line-height: 1.08 !important;
-    font-weight: 900 !important;
-    color: var(--blue) !important;
-    margin-bottom: 12px !important;
-}
-.hero-subtitle {
-    color: var(--muted) !important;
-    font-size: 16px !important;
-    max-width: 980px !important;
-    line-height: 1.65 !important;
-}
-
-/* KPI */
-.kpi-card {
-    background: var(--surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 20px !important;
-    padding: 19px 16px !important;
-    min-height: 136px !important;
-    box-shadow: 0 14px 34px rgba(11,42,74,0.08) !important;
-    overflow: hidden !important;
-}
-.kpi-label {
-    color: var(--muted) !important;
-    font-size: 13px !important;
-    font-weight: 850 !important;
-    margin-bottom: 14px !important;
-    min-height: 32px !important;
-}
-.kpi-value {
-    color: var(--blue) !important;
-    font-size: clamp(22px, 1.9vw, 32px) !important;
-    font-weight: 900 !important;
-    letter-spacing: -0.04em !important;
-    line-height: 1 !important;
-    white-space: nowrap !important;
-}
-.kpi-caption {
-    color: var(--blue-2) !important;
-    font-size: 12px !important;
-    margin-top: 14px !important;
-    line-height: 1.35 !important;
-    font-weight: 750 !important;
-}
-
-/* BOXES */
-.info-box {
-    background: var(--soft-blue) !important;
-    border: 1px solid #BBD4F8 !important;
-    border-radius: 18px !important;
-    padding: 16px 18px !important;
-    color: var(--text) !important;
-    margin: 16px 0 12px 0 !important;
-    line-height: 1.55 !important;
-}
-.info-box * {
-    color: var(--text) !important;
-}
-
-/* INPUTS / WIDGETS */
-div[data-testid="stTextInput"] input,
-div[data-testid="stNumberInput"] input,
-div[data-testid="stDateInput"] input,
-textarea,
-input {
-    background-color: #FFFFFF !important;
-    color: var(--text) !important;
-    border: 1px solid #C8D3E0 !important;
-    border-radius: 12px !important;
-    box-shadow: none !important;
-}
-
-div[data-baseweb="select"] > div,
-div[data-baseweb="popover"] div,
-ul[role="listbox"] {
-    background-color: #FFFFFF !important;
-    color: var(--text) !important;
-    border-color: #C8D3E0 !important;
-}
-
-div[data-baseweb="select"] span,
-div[data-baseweb="popover"] span,
-ul[role="listbox"] span,
-li[role="option"] {
-    color: var(--text) !important;
-}
-
-label, .stSelectbox label, .stTextInput label, .stNumberInput label, .stDateInput label, .stFileUploader label {
-    color: var(--text) !important;
-    font-weight: 750 !important;
-}
-
-/* FILE UPLOADER */
-section[data-testid="stFileUploaderDropzone"],
-div[data-testid="stFileUploader"] section {
-    background: #FFFFFF !important;
-    border: 1px dashed #AFC1D6 !important;
-    border-radius: 16px !important;
-}
-section[data-testid="stFileUploaderDropzone"] *,
-div[data-testid="stFileUploader"] * {
-    color: var(--text) !important;
-}
-
-/* BUTTONS */
-.stButton button, .stDownloadButton button, button {
-    border-radius: 14px !important;
-    border: 1px solid var(--blue) !important;
-    background: linear-gradient(135deg, var(--blue), var(--blue-2)) !important;
-    color: #FFFFFF !important;
-    font-weight: 800 !important;
-    box-shadow: 0 10px 22px rgba(31,95,174,0.18) !important;
-}
-.stButton button *, .stDownloadButton button *, button * {
-    color: #FFFFFF !important;
-}
-
-/* TABS */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 12px !important;
-}
-.stTabs [data-baseweb="tab"] {
-    background: #FFFFFF !important;
-    border-radius: 14px !important;
-    padding: 10px 18px !important;
-    border: 1px solid var(--border) !important;
-    color: var(--text) !important;
-    box-shadow: 0 8px 20px rgba(11,42,74,0.05) !important;
-}
-.stTabs [data-baseweb="tab"] * {
-    color: var(--text) !important;
-}
-.stTabs [aria-selected="true"] {
-    background: var(--blue) !important;
-    color: #FFFFFF !important;
-}
-.stTabs [aria-selected="true"] * {
-    color: #FFFFFF !important;
-}
-
-/* DATAFRAMES - AGRESSIVO */
-[data-testid="stDataFrame"], [data-testid="stTable"] {
-    background: #FFFFFF !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 18px !important;
-    overflow: hidden !important;
-    box-shadow: 0 12px 28px rgba(11,42,74,0.07) !important;
-}
-[data-testid="stDataFrame"] *, [data-testid="stTable"] * {
-    color: var(--text) !important;
-}
-.stDataFrame div,
-.stDataFrame span,
-.stDataFrame canvas,
-.stDataFrame svg {
-    color: var(--text) !important;
-}
-div[data-testid="stDataFrame"] div[role="gridcell"],
-div[data-testid="stDataFrame"] div[role="columnheader"],
-div[data-testid="stDataFrame"] div[role="row"] {
-    background-color: #FFFFFF !important;
-    color: var(--text) !important;
-    border-color: #E5EAF1 !important;
-}
-
-/* TABELAS HTML/STYLER */
-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    background: #FFFFFF !important;
-    color: var(--text) !important;
-    border-radius: 16px !important;
-    overflow: hidden !important;
-}
-thead tr {
-    background: #EAF2FF !important;
-}
-th {
-    color: var(--blue) !important;
-    font-weight: 850 !important;
-    padding: 12px !important;
-    border: 1px solid #D8E0EA !important;
-}
-td {
-    color: var(--text) !important;
-    padding: 12px !important;
-    border: 1px solid #D8E0EA !important;
-    background: #FFFFFF !important;
-}
-
-/* CLIENT LOGO CARDS */
 .client-logo-section {
-    margin-top: 24px !important;
-    padding-top: 22px !important;
-    border-top: 1px solid var(--border) !important;
+    margin-top: 24px;
+    padding-top: 22px;
+    border-top: 1px solid #D7DEE8;
 }
 .client-logo-section-title {
-    color: var(--blue) !important;
-    font-size: 15px !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.04em !important;
-    text-transform: uppercase !important;
-    margin-bottom: 14px !important;
+    color: #0B2A4A;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
 }
 .client-logo-grid {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 14px !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
 }
 .client-logo-card {
-    width: 145px !important;
-    min-height: 126px !important;
-    border: 1px solid var(--border) !important;
-    background: #FFFFFF !important;
-    border-radius: 20px !important;
-    padding: 14px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: space-between !important;
+    width: 145px;
+    min-height: 126px;
+    border: 1px solid #D7DEE8;
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
     text-decoration: none !important;
-    transition: all .18s ease !important;
-    box-shadow: 0 12px 28px rgba(11,42,74,0.08) !important;
+    transition: all .18s ease;
+    box-shadow: 0 12px 28px rgba(15,37,68,0.08);
 }
 .client-logo-card:hover {
-    transform: translateY(-2px) !important;
-    border-color: var(--blue-2) !important;
-    background: #F8FAFC !important;
+    transform: translateY(-2px);
+    border-color: #1D4ED8;
+    background: #F8FAFC;
 }
 .client-logo-img {
-    width: 78px !important;
-    height: 68px !important;
-    object-fit: contain !important;
-    border-radius: 14px !important;
-    background: #F1F5F9 !important;
-    padding: 8px !important;
+    width: 78px;
+    height: 68px;
+    object-fit: contain;
+    border-radius: 14px;
+    background: #F1F5F9;
+    padding: 8px;
+}
+.client-logo-placeholder {
+    width: 78px;
+    height: 68px;
+    border-radius: 14px;
+    background: #0B2A4A;
+    color: white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 24px;
+    font-weight: 900;
 }
 .client-logo-card span {
-    color: var(--blue) !important;
-    font-size: 13px !important;
-    font-weight: 900 !important;
-    text-align: center !important;
-    margin-top: 10px !important;
+    color: #0B2A4A;
+    font-size: 13px;
+    font-weight: 900;
+    text-align: center;
+    margin-top: 10px;
 }
+</style>
+""", unsafe_allow_html=True)
+
+
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+[data-testid="stToolbar"] {visibility: hidden !important; height: 0% !important; position: fixed;}
+[data-testid="stDecoration"] {visibility: hidden;}
+[data-testid="stStatusWidget"] {visibility: hidden;}
+.stDeployButton {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -401,19 +139,187 @@ def save_db(db):
 
 db = load_db()
 
-PRIMARY_BG = "#F3F6FA"
+PRIMARY_BG = "#F4F7FB"
 SECONDARY_BG = "#FFFFFF"
 CARD_BG = "#FFFFFF"
-BORDER = "#D8E0EA"
-TEXT = "#0B2A4A"
-MUTED = "#5F6F85"
-BLUE = "#1F5FAE"
+BORDER = "#D7DEE8"
+TEXT = "#0F2544"
+MUTED = "#64748B"
+BLUE = "#1D4ED8"
 BLUE_DARK = "#0B2A4A"
 WHITE = "#FFFFFF"
-LIGHT_GRAY = "#E7EDF5"
+LIGHT_GRAY = "#E5E7EB"
 GREEN = "#22C55E"
 RED = "#EF4444"
 YELLOW = "#F59E0B"
+
+st.markdown(
+    f"""
+    <style>
+        .stApp {{
+            background: #F4F7FB;
+            color: #0F2544;
+        }}
+
+        section[data-testid="stSidebar"] {{
+            background: #FFFFFF;
+            border-right: 1px solid #D7DEE8;
+        }}
+
+        section[data-testid="stSidebar"] * {{
+            color: #0F2544;
+        }}
+
+        .block-container {{
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+            max-width: 1380px;
+        }}
+
+        h1, h2, h3 {{
+            color: #0F2544;
+            letter-spacing: -0.03em;
+        }}
+
+        .top-brand {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 18px;
+        }}
+
+        .brand-box {{
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }}
+
+        .brand-logo {{
+            width: 74px;
+            height: 74px;
+            border-radius: 18px;
+            object-fit: contain;
+            background: #FFFFFF;
+            border: 1px solid #D7DEE8;
+            padding: 8px;
+            box-shadow: 0 10px 24px rgba(15,37,68,0.08);
+        }}
+
+        .brand-name {{
+            color: #0F2544;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }}
+
+        .hero {{
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+            border: 1px solid #D7DEE8;
+            border-left: 8px solid #0B2A4A;
+            border-radius: 26px;
+            padding: 34px 38px;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 45px rgba(15,37,68,0.10);
+        }}
+
+        .hero-title {{
+            font-size: 42px;
+            line-height: 1.06;
+            font-weight: 850;
+            color: #0B2A4A;
+            margin-bottom: 12px;
+        }}
+
+        .hero-subtitle {{
+            color: #64748B;
+            font-size: 16px;
+            max-width: 980px;
+            line-height: 1.65;
+        }}
+
+        .section-title {{
+            font-size: 24px;
+            font-weight: 850;
+            color: #0B2A4A;
+            margin: 28px 0 16px 0;
+        }}
+
+        .kpi-card {{
+            background: #FFFFFF;
+            border: 1px solid #D7DEE8;
+            border-radius: 20px;
+            padding: 19px 16px;
+            min-height: 136px;
+            box-shadow: 0 14px 34px rgba(15,37,68,0.08);
+            overflow: hidden;
+        }}
+
+        .kpi-label {{
+            color: #64748B;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 32px;
+        }}
+
+        .kpi-value {{
+            color: #0B2A4A;
+            font-size: clamp(22px, 1.9vw, 32px);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            white-space: nowrap;
+        }}
+
+        .kpi-caption {{
+            color: #1D4ED8;
+            font-size: 12px;
+            margin-top: 14px;
+            line-height: 1.35;
+            font-weight: 700;
+        }}
+
+        .info-box {{
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-radius: 18px;
+            padding: 16px 18px;
+            color: #0F2544;
+            margin: 16px 0 12px 0;
+            line-height: 1.55;
+        }}
+
+        .stButton button, .stDownloadButton button {{
+            border-radius: 14px;
+            border: 1px solid #0B2A4A;
+            background: linear-gradient(135deg, #0B2A4A, #1D4ED8);
+            color: white;
+            font-weight: 800;
+        }}
+
+        .stTabs [data-baseweb="tab"] {{
+            background: #FFFFFF;
+            border-radius: 14px;
+            padding: 10px 18px;
+            border: 1px solid #D7DEE8;
+            color: #0F2544;
+        }}
+
+        .stTabs [aria-selected="true"] {{
+            background: #0B2A4A;
+            color: #FFFFFF;
+        }}
+
+        div[data-testid="stDataFrame"] {{
+            background: #FFFFFF;
+            border-radius: 18px;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 def normalizar_texto(valor):
     if pd.isna(valor):
@@ -473,33 +379,15 @@ def kpi_card(label, value, caption=""):
 
 def aplicar_layout(fig, titulo=None):
     fig.update_layout(
-        title=dict(
-            text=titulo or "",
-            font=dict(size=18, color="#0B2A4A", family="Arial"),
-            x=0.02,
-            y=0.95
-        ),
+        title=dict(text=titulo or "", font=dict(size=18, color=TEXT, family="Arial"), x=0.02, y=0.95),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="#FFFFFF",
-        font=dict(color="#0B2A4A", family="Arial"),
+        font=dict(color=LIGHT_GRAY, family="Arial"),
         margin=dict(l=20, r=20, t=70, b=45),
-        xaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            color="#5F6F85",
-            linecolor="#D8E0EA",
-            title_font=dict(color="#5F6F85")
-        ),
-        yaxis=dict(
-            showgrid=True,
-            gridcolor="#E5EAF1",
-            zeroline=False,
-            color="#5F6F85",
-            linecolor="#D8E0EA",
-            title_font=dict(color="#5F6F85")
-        ),
-        legend=dict(bgcolor="rgba(255,255,255,0)", font=dict(color="#0B2A4A")),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#1F5FAE", font=dict(color="#0B2A4A"))
+        xaxis=dict(showgrid=False, zeroline=False, color=MUTED, linecolor=BORDER),
+        yaxis=dict(showgrid=True, gridcolor="#E5E7EB", zeroline=False, color=MUTED, linecolor=BORDER),
+        legend=dict(bgcolor="rgba(255,255,255,0)", font=dict(color=TEXT)),
+        hoverlabel=dict(bgcolor=WHITE, bordercolor=BLUE, font=dict(color=TEXT))
     )
     return fig
 
@@ -1066,11 +954,11 @@ def render_dashboard_cliente(cliente):
 
     with col_tab1:
         st.subheader("Indicadores de adesão")
-        st.table(tabela_indicadores_adesao(atual))
+        st.dataframe(tabela_indicadores_adesao(atual), use_container_width=True, hide_index=True)
 
     with col_tab2:
         st.subheader("Resumo")
-        st.table(tabela_resumo_adesao(atual))
+        st.dataframe(tabela_resumo_adesao(atual), use_container_width=True, hide_index=True)
 
     aba1, aba2, aba3 = st.tabs(["Visão do período", "Histórico", "Colaboradores sem embarque"])
 
@@ -1117,7 +1005,7 @@ def render_dashboard_cliente(cliente):
                 "colaboradores_sem_embarque": "Sem embarque",
                 "data_importacao": "Importado em"
             })
-            st.table(tabela)
+            st.dataframe(tabela, use_container_width=True, hide_index=True)
 
     with aba3:
         sem = pd.DataFrame(sem_embarque_importacao(atual["id"]))
@@ -1125,7 +1013,7 @@ def render_dashboard_cliente(cliente):
             st.success("Não há colaboradores sem embarque nesta semana.")
         else:
             tabela = sem[["nome", "matricula", "linha", "turno"]].rename(columns={"nome": "Colaborador", "matricula": "Matrícula", "linha": "Linha", "turno": "Turno"})
-            st.table(tabela)
+            st.dataframe(tabela, use_container_width=True, hide_index=True)
 
 def render_admin():
     senha_correta = st.secrets.get("ADMIN_PASSWORD", "admin123")
@@ -1195,16 +1083,7 @@ def render_admin():
                 ultimo_esperado=("total_esperado", "last"),
                 ultima_importacao=("data_importacao", "last")
             )
-            resumo["aderencia_media"] = resumo["aderencia_media"].map(lambda x: formatar_pct(x))
-            resumo = resumo.rename(columns={
-                "cliente_nome": "Cliente",
-                "importacoes": "Importações",
-                "aderencia_media": "Aderência média",
-                "ultimo_realizado": "Último realizado",
-                "ultimo_esperado": "Último esperado",
-                "ultima_importacao": "Última importação"
-            })
-            st.table(resumo)
+            st.dataframe(resumo, use_container_width=True, hide_index=True)
 
     with aba2:
         st.subheader("Cadastrar novo cliente")
@@ -1250,7 +1129,7 @@ def render_admin():
                 }
                 for c in db["clientes"]
             ])
-            st.table(tabela_clientes)
+            st.dataframe(tabela_clientes, use_container_width=True, hide_index=True)
 
             st.markdown("### Editar cliente")
             nomes_clientes = {c["nome"]: c for c in db["clientes"]}
@@ -1449,7 +1328,7 @@ def render_admin():
                     "aderencia": "Aderência (%)",
                     "colaboradores_sem_embarque": "Sem embarque"
                 })
-                st.table(tabela_exibir)
+                st.dataframe(tabela_exibir, use_container_width=True, hide_index=True)
 
                 opcoes = {
                     f"{i['semana_inicio']} até {i['semana_fim']} | {formatar_pct(i['aderencia'])} | ID {i['id']}": i
