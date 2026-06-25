@@ -234,3 +234,22 @@ Correções:
 - Tabelas principais convertidas para `st.table` para evitar dataframe escuro.
 - Gráficos em tema claro.
 - Mantém filtros semanais, CRUD, logos clicáveis e datas em português.
+
+
+## Tema claro
+
+Esta versão foi empacotada com tema claro forçado em dois pontos:
+
+1. `.streamlit/config.toml`, que define o tema nativo do Streamlit como `light`.
+2. CSS adicional em `app.py`, para impedir que inputs, tabelas, dropdowns, sidebar e gráficos herdem aparência escura do navegador ou do Streamlit Cloud.
+
+Para publicar no Streamlit Cloud, envie a pasta inteira mantendo a estrutura:
+
+```text
+.streamlit/config.toml
+app.py
+requirements.txt
+runtime.txt
+pyproject.toml
+README.md
+```
