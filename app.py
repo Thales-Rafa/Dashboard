@@ -364,6 +364,54 @@ def encontrar_importacao_semana(cliente_id, semana_inicio, semana_fim):
             return i
     return None
 
+
+def atualizar_cliente(cliente_id, nome=None, ativo=None, logo=None, regenerar_token=False):
+    for c in db["clientes"]:
+        if c["id"] == cliente_id:
+            if nome is not None and nome.strip():
+                novo_slug = criar_slug(nome)
+                slug_em_uso = any(outro["slug"] == novo_slug and outro["id"] != cliente_id for outro in db["clientes"])
+                if slug_em_uso:
+                    raise ValueError("Já existe outro cliente com este nome/slug.")
+                c["nome"] = nome.strip()
+                c["slug"] = novo_slug
+            if ativo is not None:
+                c["ativo"] = bool(ativo)
+            if logo is not None:
+                c["logo"] = logo
+            if regenerar_token:
+                c["token"] = secrets.token_urlsafe(18)
+            c["data_atualizacao"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            save_db(db)
+            return c
+    raise ValueError("Cliente não encontrado.")
+
+def excluir_cliente(cliente_id):
+    db["clientes"] = [c for c in db["clientes"] if c["id"] != cliente_id]
+    ids_importacoes = [i["id"] for i in db["importacoes"] if i["cliente_id"] == cliente_id]
+    db["importacoes"] = [i for i in db["importacoes"] if i["cliente_id"] != cliente_id]
+    db["metricas_diarias"] = [m for m in db["metricas_diarias"] if m.get("importacao_id") not in ids_importacoes and m.get("cliente_id") != cliente_id]
+    db["sem_embarque"] = [s for s in db["sem_embarque"] if s.get("importacao_id") not in ids_importacoes and s.get("cliente_id") != cliente_id]
+    save_db(db)
+
+def atualizar_importacao_manual(importacao_id, campos):
+    for i in db["importacoes"]:
+        if i["id"] == importacao_id:
+            for k, v in campos.items():
+                if k in i:
+                    i[k] = v
+            i["data_atualizacao_manual"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            save_db(db)
+            return i
+    raise ValueError("Importação não encontrada.")
+
+def limpar_banco_total():
+    db["clientes"] = []
+    db["importacoes"] = []
+    db["metricas_diarias"] = []
+    db["sem_embarque"] = []
+    save_db(db)
+
 def status_adesao(valor_pct):
     if valor_pct >= 85:
         return "Bom"
@@ -747,16 +795,72 @@ def render_admin():
         if not db["clientes"]:
             st.info("Nenhum cliente cadastrado ainda.")
         else:
-            for cliente in db["clientes"]:
-                with st.expander(cliente["nome"]):
-                    st.write(f"Slug: `{cliente['slug']}`")
-                    st.write(f"Token: `{cliente['token']}`")
-                    st.write("Link público do cliente:")
-                    st.code(gerar_link_cliente(cliente))
-                    if not db["settings"].get("app_url"):
-                        st.warning("Cadastre a URL pública do app na aba Configurações e links para o link ficar correto.")
-                    if cliente.get("logo"):
-                        st.image(cliente["logo"], width=120)
+            tabela_clientes = pd.DataFrame([
+                {
+                    "Cliente": c["nome"],
+                    "Slug": c["slug"],
+                    "Ativo": "Sim" if c.get("ativo", True) else "Não",
+                    "Importações": len(importacoes_cliente(c["id"])),
+                    "Criado em": c.get("data_criacao", ""),
+                    "Atualizado em": c.get("data_atualizacao", "")
+                }
+                for c in db["clientes"]
+            ])
+            st.dataframe(tabela_clientes, use_container_width=True, hide_index=True)
+
+            st.markdown("### Editar cliente")
+            nomes_clientes = {c["nome"]: c for c in db["clientes"]}
+            cliente_editar_nome = st.selectbox("Selecionar cliente", list(nomes_clientes.keys()), key="cliente_editar_select")
+            cliente_editar = nomes_clientes[cliente_editar_nome]
+
+            with st.form("form_editar_cliente"):
+                novo_nome = st.text_input("Nome do cliente", value=cliente_editar["nome"])
+                ativo = st.checkbox("Cliente ativo", value=cliente_editar.get("ativo", True))
+                nova_logo = st.file_uploader("Substituir logo do cliente", type=["png", "jpg", "jpeg"], key=f"logo_edit_{cliente_editar['id']}")
+                remover_logo = st.checkbox("Remover logo atual")
+                regenerar_token = st.checkbox("Regenerar token/link público")
+                salvar_cliente = st.form_submit_button("Salvar alterações do cliente")
+
+                if salvar_cliente:
+                    try:
+                        logo_base64 = None
+                        if remover_logo:
+                            logo_base64 = ""
+                        elif nova_logo is not None:
+                            logo_base64 = arquivo_para_base64(nova_logo)
+
+                        atualizado = atualizar_cliente(
+                            cliente_editar["id"],
+                            nome=novo_nome,
+                            ativo=ativo,
+                            logo=logo_base64,
+                            regenerar_token=regenerar_token
+                        )
+                        st.success("Cliente atualizado com sucesso.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao atualizar cliente: {e}")
+
+            with st.expander("Link público e dados técnicos"):
+                st.write(f"Slug: `{cliente_editar['slug']}`")
+                st.write(f"Token: `{cliente_editar['token']}`")
+                st.write("Link público do cliente:")
+                st.code(gerar_link_cliente(cliente_editar))
+                if not db["settings"].get("app_url"):
+                    st.warning("Cadastre a URL pública do app na aba Configurações e links para o link ficar correto.")
+                if cliente_editar.get("logo"):
+                    st.image(cliente_editar["logo"], width=120)
+
+            st.markdown("### Excluir cliente")
+            st.warning("Excluir cliente remove também todas as importações, métricas diárias e listas de sem embarque vinculadas a ele.")
+            confirmar_nome = st.text_input("Digite o nome exato do cliente para confirmar exclusão", key="confirmar_excluir_cliente")
+            if st.button("Excluir cliente definitivamente"):
+                if confirmar_nome == cliente_editar["nome"]:
+                    excluir_cliente(cliente_editar["id"])
+                    st.success("Cliente excluído com sucesso.")
+                    st.rerun()
+                else:
+                    st.error("Nome de confirmação não confere.")
 
     with aba3:
         if not db["clientes"]:
@@ -870,6 +974,38 @@ def render_admin():
                         else:
                             st.error("Marque a confirmação antes de excluir.")
 
+                st.markdown("### Ajuste manual da importação")
+                st.caption("Use apenas para corrigir pequenas informações de histórico. Para recalcular de verdade, reimporte a semana.")
+                with st.form("form_ajuste_importacao"):
+                    col_a, col_b, col_c = st.columns(3)
+                    with col_a:
+                        novo_esperado = st.number_input("Total esperado", min_value=0, value=int(imp.get("total_esperado", 0)), step=1)
+                        novo_realizado = st.number_input("Total realizado", min_value=0, value=int(imp.get("total_realizado", 0)), step=1)
+                    with col_b:
+                        novos_colab = st.number_input("Colaboradores cadastrados", min_value=0, value=int(imp.get("colaboradores_cadastrados", 0)), step=1)
+                        novo_sem = st.number_input("Colaboradores sem embarque", min_value=0, value=int(imp.get("colaboradores_sem_embarque", 0)), step=1)
+                    with col_c:
+                        novos_dias = st.number_input("Dias de operação", min_value=0, value=int(imp.get("dias_operacao", 0)), step=1)
+                        novo_emb_por_dia = st.number_input("Embarques por colaborador/dia", min_value=1, value=int(imp.get("embarques_por_colaborador_dia", 2)), step=1)
+
+                    nova_aderencia = (novo_realizado / novo_esperado * 100) if novo_esperado else 0
+                    st.info(f"Nova aderência calculada: {formatar_pct(nova_aderencia)}")
+
+                    salvar_ajuste = st.form_submit_button("Salvar ajuste manual")
+                    if salvar_ajuste:
+                        atualizar_importacao_manual(imp["id"], {
+                            "total_esperado": int(novo_esperado),
+                            "total_realizado": int(novo_realizado),
+                            "colaboradores_cadastrados": int(novos_colab),
+                            "colaboradores_sem_embarque": int(novo_sem),
+                            "dias_operacao": int(novos_dias),
+                            "embarques_por_colaborador_dia": int(novo_emb_por_dia),
+                            "aderencia": float(nova_aderencia),
+                            "faltas_estimadas": int(max(novo_esperado - novo_realizado, 0))
+                        })
+                        st.success("Importação ajustada.")
+                        st.rerun()
+
         st.markdown(
             """
             <div class="info-box">
@@ -908,6 +1044,25 @@ def render_admin():
             for cliente in db["clientes"]:
                 st.write(f"**{cliente['nome']}**")
                 st.code(gerar_link_cliente(cliente))
+
+        st.subheader("Backup e manutenção")
+        backup_json = json.dumps(db, ensure_ascii=False, indent=2).encode("utf-8")
+        st.download_button(
+            "Baixar backup do banco JSON",
+            data=backup_json,
+            file_name="backup_dashboard_aderencia.json",
+            mime="application/json"
+        )
+
+        st.warning("Área perigosa: limpar banco apaga clientes, importações, métricas e listas de sem embarque.")
+        confirmar_limpeza = st.text_input("Digite LIMPAR para confirmar limpeza total", key="confirmar_limpeza_total")
+        if st.button("Limpar banco total"):
+            if confirmar_limpeza == "LIMPAR":
+                limpar_banco_total()
+                st.success("Banco limpo com sucesso.")
+                st.rerun()
+            else:
+                st.error("Confirmação inválida.")
 
 params = st.query_params
 cliente_slug = params.get("cliente", None)

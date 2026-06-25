@@ -77,3 +77,27 @@ Novidades:
   - Embarcaram
   - Faltantes
   - Total cadastrados
+
+
+## V5.3 CRUD
+
+Novidades:
+
+- CRUD de clientes:
+  - criar cliente
+  - visualizar clientes
+  - editar nome
+  - ativar/desativar cliente
+  - trocar/remover logo
+  - regenerar token/link público
+  - excluir cliente com importações vinculadas
+- CRUD de importações:
+  - visualizar importações por cliente
+  - excluir importação
+  - substituir semana já existente
+  - ajuste manual de totais de uma importação
+- Configurações:
+  - editar URL pública do app
+  - editar nome/logo da operação
+  - baixar backup JSON
+  - limpar banco total
