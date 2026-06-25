@@ -157,3 +157,8 @@ Novidades:
 - CSS para ocultar elementos padrão do Streamlit, como menu, rodapé e toolbar quando possível
 
 Observação: em alguns ambientes do Streamlit Cloud, o botão Share pode continuar aparecendo por limitação da própria plataforma.
+
+
+## V5.8 - Correção CSS
+
+Corrigido erro de NameError causado por CSS inserido fora do bloco HTML.

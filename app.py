@@ -11,6 +11,19 @@ from datetime import datetime, date
 
 st.set_page_config(page_title="Dashboard de Aderência", layout="wide")
 
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+[data-testid="stToolbar"] {visibility: hidden !important; height: 0% !important; position: fixed;}
+[data-testid="stDecoration"] {visibility: hidden;}
+[data-testid="stStatusWidget"] {visibility: hidden;}
+.stDeployButton {display: none;}
+</style>
+""", unsafe_allow_html=True)
+
+
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "database.json"
@@ -184,13 +197,6 @@ st.markdown(
         }}
         .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
     
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        [data-testid="stToolbar"] {visibility: hidden !important; height: 0% !important; position: fixed;}
-        [data-testid="stDecoration"] {visibility: hidden;}
-        [data-testid="stStatusWidget"] {visibility: hidden;}
-        .stDeployButton {display: none;}
 
     </style>
     """,
