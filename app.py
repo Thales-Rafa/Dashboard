@@ -811,6 +811,7 @@ def render_dashboard_cliente(cliente):
                 """,
                 unsafe_allow_html=True
             )
+
     else:
         with col_filtro2:
             st.markdown(

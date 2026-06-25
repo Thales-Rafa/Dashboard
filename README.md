@@ -173,8 +173,8 @@ Correção:
 - Corrige `titulo_periodo`.
 
 
-## V5.13 - Filtro inline corrigido
+## V5.14 - Filtro inline limpo
 
-- Filtros do cliente movidos da barra lateral para o corpo do dashboard.
-- CSS corrigido em bloco HTML válido.
-- Mantém correções de render_header e titulo_periodo.
+- Base: V5.11 estável.
+- Move filtros do dashboard público do cliente para o corpo da página.
+- Não adiciona CSS extra, para evitar erros de `NameError`.
