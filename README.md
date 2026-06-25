@@ -1,21 +1,48 @@
-# Dashboard de Aderência de Embarque - V4
+# Dashboard de Aderência - V5 Multi-clientes
 
-Versão com cálculo operacional mais claro.
+Sistema em Streamlit para acompanhamento semanal de aderência de embarque por cliente.
 
-## Cálculo
+## Recursos
+
+- Painel ADM com senha
+- Cadastro de múltiplos clientes
+- Upload de logo da sua empresa
+- Upload de logo do cliente
+- Importação semanal por cliente
+- Histórico semanal de aderência
+- Comparativo semana atual x semana anterior
+- Link individual por cliente com token
+- Cliente visualiza apenas o próprio dashboard
+- Lista de colaboradores sem embarque por semana
+
+## Acesso ADM
+
+Senha padrão do MVP:
 
 ```text
-Esperado = colaboradores cadastrados × embarques por colaborador/dia × dias de operação
-Aderência = embarques realizados / embarques esperados
+admin123
 ```
 
-## Novidades
+Recomendado configurar no Streamlit Secrets:
 
-- Upload do relatório de embarque
-- Upload do arquivo de colaboradores cadastrados
-- Seleção dos dias em que a operação roda
-- Indicador de dias de operação considerados
-- Remoção das abas Divergências e Dados filtrados
-- Aba Colaboradores com ranking e lista de colaboradores cadastrados sem embarque
-- Gráficos com rótulos em português
-- Gráfico de prefixos simplificado
+```toml
+ADMIN_PASSWORD = "sua-senha-forte"
+```
+
+## Link do cliente
+
+Cada cliente recebe link com slug e token:
+
+```text
+https://SEU-APP.streamlit.app/?cliente=total-express&token=TOKEN
+```
+
+## Importante
+
+Esta versão usa armazenamento local em JSON:
+
+```text
+data/database.json
+```
+
+Serve para validar o fluxo. Para uso contínuo e seguro, a próxima etapa recomendada é migrar para Supabase/PostgreSQL.
