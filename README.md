@@ -164,9 +164,10 @@ Observação: em alguns ambientes do Streamlit Cloud, o botão Share pode contin
 Corrigido erro de NameError causado por CSS inserido fora do bloco HTML.
 
 
-## V5.10 Estável
+## V5.11 - Correção definitiva render_header
 
-Correções:
-- Corrigido erro de `titulo_periodo` no link público do cliente.
-- Cabeçalho do ADM e do cliente ficou defensivo contra ausência de logo/configurações.
-- Mantém filtros do cliente e CSS de ocultação do menu.
+Correção:
+- `render_header()` agora é definido antes do `render_admin()`.
+- Cabeçalho não quebra sem logo ou configuração.
+- Mantém filtros no link público do cliente.
+- Corrige `titulo_periodo`.

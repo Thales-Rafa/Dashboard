@@ -249,6 +249,7 @@ def arquivo_para_base64(uploaded_file):
 def imagem_html(src, nome):
     src = src or ""
     nome = nome or ""
+
     if src:
         return f"""
         <div class="brand-box">
@@ -256,6 +257,7 @@ def imagem_html(src, nome):
             <div><div class="brand-name">{nome}</div></div>
         </div>
         """
+
     return f"""
     <div class="brand-box">
         <div><div class="brand-name">{nome}</div></div>
@@ -710,6 +712,7 @@ def render_header(cliente=None):
 
     cliente_logo = ""
     cliente_nome = ""
+
     if isinstance(cliente, dict):
         cliente_logo = cliente.get("logo", "") or ""
         cliente_nome = cliente.get("nome", "") or ""
