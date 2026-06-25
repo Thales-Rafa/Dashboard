@@ -656,6 +656,70 @@ def tabela_resumo_adesao(importacao):
         {"STATUS": "Total cadastrados", "VALOR": total_cadastrados},
     ])
 
+def calcular_adesao_colaboradores_filtrada(importacao, metricas_filtradas=None):
+    total_cadastrados = int(importacao.get("colaboradores_cadastrados", 0))
+
+    # Fallback: usa o total salvo na importação.
+    unicos_embarcaram = int(importacao.get("colaboradores_que_embarcaram", 0))
+
+    # Observação: nesta versão local/JSON não guardamos a lista nominal diária de embarques,
+    # apenas as métricas agregadas. Então, ao filtrar por semana/dia, a adesão nominal
+    # fica baseada na importação. O total esperado/realizado continua sensível ao filtro.
+    faltantes = max(total_cadastrados - unicos_embarcaram, 0)
+    adesao_pct = (unicos_embarcaram / total_cadastrados * 100) if total_cadastrados else 0
+
+    return {
+        "total_cadastrados": total_cadastrados,
+        "colaboradores_com_embarque": unicos_embarcaram,
+        "faltantes_adesao": faltantes,
+        "adesao_pct": adesao_pct,
+    }
+
+def tabela_adesao_unificada(importacao, resumo_filtro=None):
+    adesao = calcular_adesao_colaboradores_filtrada(importacao)
+
+    total_esperado = int(resumo_filtro.get("total_esperado", importacao.get("total_esperado", 0))) if resumo_filtro else int(importacao.get("total_esperado", 0))
+    total_realizado = int(resumo_filtro.get("total_realizado", importacao.get("total_realizado", 0))) if resumo_filtro else int(importacao.get("total_realizado", 0))
+    aderencia_operacional = (total_realizado / total_esperado * 100) if total_esperado else 0
+
+    return pd.DataFrame([
+        {
+            "INDICADOR": "Colaboradores com pelo menos 1 embarque",
+            "VALOR": formatar_num(adesao["colaboradores_com_embarque"]),
+            "STATUS": "Em andamento" if adesao["faltantes_adesao"] > 0 else "Completo"
+        },
+        {
+            "INDICADOR": "Adesão de colaboradores",
+            "VALOR": formatar_pct(adesao["adesao_pct"]),
+            "STATUS": status_adesao(adesao["adesao_pct"])
+        },
+        {
+            "INDICADOR": "Colaboradores faltantes para aderir",
+            "VALOR": formatar_num(adesao["faltantes_adesao"]),
+            "STATUS": status_faltantes(adesao["faltantes_adesao"])
+        },
+        {
+            "INDICADOR": "Total de colaboradores cadastrados",
+            "VALOR": formatar_num(adesao["total_cadastrados"]),
+            "STATUS": "Base total"
+        },
+        {
+            "INDICADOR": "Embarques realizados no filtro",
+            "VALOR": formatar_num(total_realizado),
+            "STATUS": "Operação"
+        },
+        {
+            "INDICADOR": "Embarques esperados no filtro",
+            "VALOR": formatar_num(total_esperado),
+            "STATUS": "Planejado"
+        },
+        {
+            "INDICADOR": "Aderência operacional do filtro",
+            "VALOR": formatar_pct(aderencia_operacional),
+            "STATUS": status_adesao(aderencia_operacional)
+        },
+    ])
+
 
 def gerar_link_cliente(cliente):
     app_url = db["settings"].get("app_url", "").strip().rstrip("/")
@@ -894,38 +958,44 @@ def render_dashboard_cliente(cliente):
     )
 
     st.markdown('<div class="section-title">Adesão de colaboradores</div>', unsafe_allow_html=True)
-    total_cadastrados = int(atual.get("colaboradores_cadastrados", 0))
-    unicos_embarcaram = int(atual.get("colaboradores_que_embarcaram", 0))
-    faltantes_aderir = max(total_cadastrados - unicos_embarcaram, 0)
 
-    col_pizza, col_tab1, col_tab2 = st.columns([1.1, 1.4, 0.9])
+    adesao = calcular_adesao_colaboradores_filtrada(atual)
+    total_cadastrados = adesao["total_cadastrados"]
+    colaboradores_com_embarque = adesao["colaboradores_com_embarque"]
+    faltantes_aderir = adesao["faltantes_adesao"]
+
+    col_pizza, col_tabela = st.columns([1.25, 1.75])
 
     with col_pizza:
         pizza_df = pd.DataFrame({
-            "Categoria": ["Embarcaram", "Faltantes"],
-            "Quantidade": [unicos_embarcaram, faltantes_aderir]
+            "Categoria": ["Colaboradores com embarque", "Faltantes para aderir"],
+            "Quantidade": [colaboradores_com_embarque, faltantes_aderir]
         })
         fig_pizza = px.pie(
             pizza_df,
             names="Categoria",
             values="Quantidade",
-            hole=0.58,
+            hole=0.52,
             color_discrete_sequence=[BLUE, "#CBD5E1"]
         )
         fig_pizza.update_traces(
             textinfo="label+percent+value",
+            textposition="outside",
             marker=dict(line=dict(color=PRIMARY_BG, width=2))
         )
-        fig_pizza = aplicar_layout(fig_pizza, "Cadastrados x colaboradores que embarcaram")
+        fig_pizza.update_layout(
+            height=520,
+            margin=dict(l=20, r=20, t=90, b=40),
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+        )
+        fig_pizza = aplicar_layout(fig_pizza, "Cadastrados x colaboradores com embarque")
         st.plotly_chart(fig_pizza, use_container_width=True)
 
-    with col_tab1:
-        st.subheader("Indicadores de adesão")
-        st.dataframe(tabela_indicadores_adesao(atual), use_container_width=True, hide_index=True)
-
-    with col_tab2:
-        st.subheader("Resumo")
-        st.dataframe(tabela_resumo_adesao(atual), use_container_width=True, hide_index=True)
+    with col_tabela:
+        st.subheader("Indicadores consolidados")
+        tabela_unificada = tabela_adesao_unificada(atual, resumo_filtro)
+        st.dataframe(tabela_unificada, use_container_width=True, hide_index=True)
 
     aba1, aba2, aba3 = st.tabs(["Visão do período", "Histórico", "Colaboradores sem embarque"])
 

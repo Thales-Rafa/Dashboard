@@ -219,3 +219,12 @@ Correções:
 - Cliente vê Famatur no topo esquerdo e sua própria logo no topo direito.
 - Bloco principal do cliente fica mais limpo, apenas com título e subtítulo.
 - ADM mantém logo Famatur dentro do bloco principal e logos clicáveis dos clientes abaixo.
+
+
+## V5.21 - Adesão unificada
+
+- Remove a tabela duplicada de resumo.
+- Junta os indicadores em uma única tabela consolidada.
+- Altera legenda para "Colaboradores com pelo menos 1 embarque".
+- Aumenta o gráfico de pizza para evitar cortes.
+- Pizza e tabela usam os valores de adesão da base/importação e mantêm indicadores operacionais sensíveis ao filtro.
