@@ -228,3 +228,22 @@ Correções:
 - Altera legenda para "Colaboradores com pelo menos 1 embarque".
 - Aumenta o gráfico de pizza para evitar cortes.
 - Pizza e tabela usam os valores de adesão da base/importação e mantêm indicadores operacionais sensíveis ao filtro.
+
+
+## V5.22 - Pizza sem corte
+
+- Rótulos da pizza movidos para dentro do gráfico.
+- Legenda foi movida para baixo.
+- Nome do gráfico simplificado para evitar cortes laterais.
+
+
+## V5.23 - Histórico semanal real
+
+- O gráfico de histórico não usa mais a data da importação como referência.
+- O histórico agora é agrupado pela semana operacional real dos embarques.
+- Cada ponto representa:
+  - semana segunda a domingo
+  - esperado da semana
+  - realizado da semana
+  - aderência semanal
+- A tabela de histórico também passa a mostrar semanas operacionais.

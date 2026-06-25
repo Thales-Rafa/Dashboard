@@ -488,6 +488,47 @@ def metricas_importacao(importacao_id):
 def sem_embarque_importacao(importacao_id):
     return [s for s in db["sem_embarque"] if s["importacao_id"] == importacao_id]
 
+def historico_semanal_cliente(cliente_id):
+    metricas = [m for m in db.get("metricas_diarias", []) if m.get("cliente_id") == cliente_id]
+    if not metricas:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(metricas)
+    if df.empty or "data" not in df.columns:
+        return pd.DataFrame()
+
+    df["data"] = pd.to_datetime(df["data"], errors="coerce")
+    df = df.dropna(subset=["data"]).copy()
+
+    if df.empty:
+        return pd.DataFrame()
+
+    df["semana_inicio"] = df["data"] - pd.to_timedelta(df["data"].dt.weekday, unit="D")
+    df["semana_fim"] = df["semana_inicio"] + pd.Timedelta(days=6)
+
+    semanal = (
+        df.groupby(["semana_inicio", "semana_fim"], as_index=False)
+        .agg(
+            esperado=("esperado", "sum"),
+            realizado=("realizado", "sum"),
+            dias_operacao=("data", "nunique"),
+        )
+        .sort_values("semana_inicio")
+    )
+
+    semanal["aderencia"] = semanal.apply(
+        lambda row: (row["realizado"] / row["esperado"] * 100) if row["esperado"] else 0,
+        axis=1
+    )
+    semanal["faltas_estimadas"] = (semanal["esperado"] - semanal["realizado"]).clip(lower=0)
+    semanal["semana"] = semanal.apply(
+        lambda row: f"{row['semana_inicio'].strftime('%d/%m/%Y')} até {row['semana_fim'].strftime('%d/%m/%Y')}",
+        axis=1
+    )
+
+    return semanal
+
+
 def filtrar_metricas_por_periodo(metricas_df, modo_filtro, data_ini=None, data_fim=None):
     if metricas_df.empty:
         return metricas_df
@@ -968,7 +1009,7 @@ def render_dashboard_cliente(cliente):
 
     with col_pizza:
         pizza_df = pd.DataFrame({
-            "Categoria": ["Colaboradores com embarque", "Faltantes para aderir"],
+            "Categoria": ["Com embarque", "Faltantes"],
             "Quantidade": [colaboradores_com_embarque, faltantes_aderir]
         })
         fig_pizza = px.pie(
@@ -979,17 +1020,28 @@ def render_dashboard_cliente(cliente):
             color_discrete_sequence=[BLUE, "#CBD5E1"]
         )
         fig_pizza.update_traces(
-            textinfo="label+percent+value",
-            textposition="outside",
+            textinfo="percent+value",
+            textposition="inside",
+            insidetextorientation="horizontal",
+            textfont=dict(size=18, color=WHITE),
             marker=dict(line=dict(color=PRIMARY_BG, width=2))
         )
         fig_pizza.update_layout(
-            height=520,
-            margin=dict(l=20, r=20, t=90, b=40),
+            height=500,
+            margin=dict(l=10, r=10, t=80, b=90),
             showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.08,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=13, color=LIGHT_GRAY)
+            ),
+            uniformtext_minsize=13,
+            uniformtext_mode="hide"
         )
-        fig_pizza = aplicar_layout(fig_pizza, "Cadastrados x colaboradores com embarque")
+        fig_pizza = aplicar_layout(fig_pizza, "Adesão de colaboradores")
         st.plotly_chart(fig_pizza, use_container_width=True)
 
     with col_tabela:
@@ -1018,31 +1070,37 @@ def render_dashboard_cliente(cliente):
             st.plotly_chart(aplicar_layout(fig2, "Aderência diária"), use_container_width=True)
 
     with aba2:
-        hist = pd.DataFrame(importacoes_cliente(cliente["id"]))
-        if hist.empty:
-            st.info("Sem histórico.")
-        else:
-            hist["semana_inicio_dt"] = pd.to_datetime(hist["semana_inicio"])
-            hist = hist.sort_values("semana_inicio_dt")
-            fig_hist = go.Figure()
-            fig_hist.add_trace(go.Scatter(x=hist["semana_inicio_dt"], y=hist["aderencia"], mode="lines+markers", name="Aderência por importação", line=dict(color=BLUE, width=3), marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2))))
-            fig_hist.update_xaxes(title_text="Semana", tickformat="%d/%m/%Y")
-            fig_hist.update_yaxes(title_text="Aderência (%)")
-            st.plotly_chart(aplicar_layout(fig_hist, "Histórico por importação de aderência"), use_container_width=True)
+        hist_sem = historico_semanal_cliente(cliente["id"])
 
-            tabela = hist[["semana_inicio", "semana_fim", "colaboradores_cadastrados", "dias_operacao", "total_esperado", "total_realizado", "aderencia", "faltas_estimadas", "colaboradores_sem_embarque", "data_importacao"]].rename(columns={
-                "semana_inicio": "Semana início",
-                "semana_fim": "Semana fim",
-                "colaboradores_cadastrados": "Colaboradores",
-                "dias_operacao": "Dias operação",
-                "total_esperado": "Esperado",
-                "total_realizado": "Realizado",
+        if hist_sem.empty:
+            st.info("Sem histórico semanal disponível.")
+        else:
+            fig_hist = go.Figure()
+            fig_hist.add_trace(go.Scatter(
+                x=hist_sem["semana_inicio"],
+                y=hist_sem["aderencia"],
+                mode="lines+markers",
+                name="Aderência semanal",
+                line=dict(color=BLUE, width=3),
+                marker=dict(size=8, color=WHITE, line=dict(color=BLUE, width=2))
+            ))
+            fig_hist.update_xaxes(title_text="Semana operacional", tickformat="%d/%m/%Y")
+            fig_hist.update_yaxes(title_text="Aderência semanal (%)")
+            st.plotly_chart(aplicar_layout(fig_hist, "Histórico semanal de aderência"), use_container_width=True)
+
+            tabela_hist = hist_sem[[
+                "semana", "dias_operacao", "esperado", "realizado",
+                "aderencia", "faltas_estimadas"
+            ]].rename(columns={
+                "semana": "Semana operacional",
+                "dias_operacao": "Dias com operação",
+                "esperado": "Esperado",
+                "realizado": "Realizado",
                 "aderencia": "Aderência (%)",
-                "faltas_estimadas": "Faltas estimadas",
-                "colaboradores_sem_embarque": "Sem embarque",
-                "data_importacao": "Importado em"
+                "faltas_estimadas": "Faltas estimadas"
             })
-            st.dataframe(tabela, use_container_width=True, hide_index=True)
+
+            st.dataframe(tabela_hist, use_container_width=True, hide_index=True)
 
     with aba3:
         sem = pd.DataFrame(sem_embarque_importacao(atual["id"]))
