@@ -187,12 +187,11 @@ Correção:
 - Após login, o ADM pode sair pelo botão na lateral.
 
 
-## V5.16 - Semanal + logos no ADM
+## V5.17 - Semanal + logos com CSS seguro
 
 - Datas em português no formato DD/MM/AAAA.
-- Filtro padrão do dashboard público agora é semanal.
-- Mantém filtro por dia e intervalo personalizado.
-- Logo da empresa aparece dentro do bloco principal do dashboard no ADM.
-- Abaixo do subtítulo do ADM aparecem as logos dos clientes cadastrados.
-- Cada logo de cliente é clicável e abre o dashboard público daquele cliente.
-- Visual reforçado em azul escuro, branco e cinza claro.
+- Filtro padrão do dashboard público agora é Por semana.
+- Mantém Todo o período, Por dia e Intervalo personalizado.
+- Logo da empresa aparece dentro do bloco principal no ADM.
+- Logos dos clientes aparecem abaixo do subtítulo no ADM e são clicáveis.
+- CSS dos cards de logo foi inserido em bloco seguro, evitando NameError.

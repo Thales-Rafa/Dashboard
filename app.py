@@ -13,6 +13,76 @@ st.set_page_config(page_title="Dashboard de Aderência", layout="wide")
 
 st.markdown("""
 <style>
+.client-logo-section {
+    margin-top: 24px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(229,231,235,0.12);
+}
+.client-logo-section-title {
+    color: #E5E7EB;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+.client-logo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.client-logo-card {
+    width: 145px;
+    min-height: 126px;
+    border: 1px solid rgba(229,231,235,0.16);
+    background: rgba(15,23,42,0.78);
+    border-radius: 20px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none !important;
+    transition: all .18s ease;
+}
+.client-logo-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(96,165,250,0.62);
+    background: rgba(30,58,95,0.46);
+}
+.client-logo-img {
+    width: 78px;
+    height: 68px;
+    object-fit: contain;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    padding: 8px;
+}
+.client-logo-placeholder {
+    width: 78px;
+    height: 68px;
+    border-radius: 14px;
+    background: #1E3A5F;
+    color: white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 24px;
+    font-weight: 900;
+}
+.client-logo-card span {
+    color: #F9FAFB;
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+st.markdown("""
+<style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -205,72 +275,6 @@ st.markdown(
         }}
         .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
     
-
-
-.client-logo-section {
-    margin-top: 24px;
-    padding-top: 22px;
-    border-top: 1px solid rgba(229,231,235,0.12);
-}
-.client-logo-section-title {
-    color: #E5E7EB;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-}
-.client-logo-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-}
-.client-logo-card {
-    width: 145px;
-    min-height: 126px;
-    border: 1px solid rgba(229,231,235,0.16);
-    background: rgba(15,23,42,0.78);
-    border-radius: 20px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    text-decoration: none !important;
-    transition: all .18s ease;
-}
-.client-logo-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(96,165,250,0.62);
-    background: rgba(30,58,95,0.46);
-}
-.client-logo-img {
-    width: 78px;
-    height: 68px;
-    object-fit: contain;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.06);
-    padding: 8px;
-}
-.client-logo-placeholder {
-    width: 78px;
-    height: 68px;
-    border-radius: 14px;
-    background: #1E3A5F;
-    color: white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size: 24px;
-    font-weight: 900;
-}
-.client-logo-card span {
-    color: #F9FAFB;
-    font-size: 13px;
-    font-weight: 800;
-    text-align: center;
-    margin-top: 10px;
-}
 
     </style>
     """,
@@ -1095,11 +1099,9 @@ def render_dashboard_cliente(cliente):
             fig_hist.update_yaxes(title_text="Aderência (%)")
             st.plotly_chart(aplicar_layout(fig_hist, "Histórico por importação de aderência"), use_container_width=True)
 
-            hist["semana_inicio_fmt"] = pd.to_datetime(hist["semana_inicio"]).dt.strftime("%d/%m/%Y")
-            hist["semana_fim_fmt"] = pd.to_datetime(hist["semana_fim"]).dt.strftime("%d/%m/%Y")
-            tabela = hist[["semana_inicio_fmt", "semana_fim_fmt", "colaboradores_cadastrados", "dias_operacao", "total_esperado", "total_realizado", "aderencia", "faltas_estimadas", "colaboradores_sem_embarque", "data_importacao"]].rename(columns={
-                "semana_inicio_fmt": "Semana início",
-                "semana_fim_fmt": "Semana fim",
+            tabela = hist[["semana_inicio", "semana_fim", "colaboradores_cadastrados", "dias_operacao", "total_esperado", "total_realizado", "aderencia", "faltas_estimadas", "colaboradores_sem_embarque", "data_importacao"]].rename(columns={
+                "semana_inicio": "Semana início",
+                "semana_fim": "Semana fim",
                 "colaboradores_cadastrados": "Colaboradores",
                 "dias_operacao": "Dias operação",
                 "total_esperado": "Esperado",
@@ -1424,8 +1426,8 @@ def render_admin():
                     "total_esperado", "total_realizado", "aderencia", "colaboradores_sem_embarque"
                 ]].rename(columns={
                     "id": "ID",
-                    "semana_inicio_fmt": "Semana início",
-                    "semana_fim_fmt": "Semana fim",
+                    "semana_inicio": "Semana início",
+                    "semana_fim": "Semana fim",
                     "data_importacao": "Importado em",
                     "total_esperado": "Esperado",
                     "total_realizado": "Realizado",
