@@ -16,12 +16,12 @@ st.markdown("""
 .client-logo-section {
     margin-top: 24px;
     padding-top: 22px;
-    border-top: 1px solid rgba(229,231,235,0.12);
+    border-top: 1px solid #D7DEE8;
 }
 .client-logo-section-title {
-    color: #E5E7EB;
+    color: #0B2A4A;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     margin-bottom: 14px;
@@ -34,8 +34,8 @@ st.markdown("""
 .client-logo-card {
     width: 145px;
     min-height: 126px;
-    border: 1px solid rgba(229,231,235,0.16);
-    background: rgba(15,23,42,0.78);
+    border: 1px solid #D7DEE8;
+    background: #FFFFFF;
     border-radius: 20px;
     padding: 14px;
     display: flex;
@@ -44,25 +44,26 @@ st.markdown("""
     justify-content: space-between;
     text-decoration: none !important;
     transition: all .18s ease;
+    box-shadow: 0 12px 28px rgba(15,37,68,0.08);
 }
 .client-logo-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(96,165,250,0.62);
-    background: rgba(30,58,95,0.46);
+    border-color: #1D4ED8;
+    background: #F8FAFC;
 }
 .client-logo-img {
     width: 78px;
     height: 68px;
     object-fit: contain;
     border-radius: 14px;
-    background: rgba(255,255,255,0.06);
+    background: #F1F5F9;
     padding: 8px;
 }
 .client-logo-placeholder {
     width: 78px;
     height: 68px;
     border-radius: 14px;
-    background: #1E3A5F;
+    background: #0B2A4A;
     color: white;
     display:flex;
     align-items:center;
@@ -71,9 +72,9 @@ st.markdown("""
     font-weight: 900;
 }
 .client-logo-card span {
-    color: #F9FAFB;
+    color: #0B2A4A;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     text-align: center;
     margin-top: 10px;
 }
@@ -138,14 +139,14 @@ def save_db(db):
 
 db = load_db()
 
-PRIMARY_BG = "#0B1220"
-SECONDARY_BG = "#111827"
-CARD_BG = "#151F32"
-BORDER = "#263449"
-TEXT = "#F9FAFB"
-MUTED = "#AAB4C3"
-BLUE = "#60A5FA"
-BLUE_DARK = "#1E3A5F"
+PRIMARY_BG = "#F4F7FB"
+SECONDARY_BG = "#FFFFFF"
+CARD_BG = "#FFFFFF"
+BORDER = "#D7DEE8"
+TEXT = "#0F2544"
+MUTED = "#64748B"
+BLUE = "#1D4ED8"
+BLUE_DARK = "#0B2A4A"
 WHITE = "#FFFFFF"
 LIGHT_GRAY = "#E5E7EB"
 GREEN = "#22C55E"
@@ -156,20 +157,30 @@ st.markdown(
     f"""
     <style>
         .stApp {{
-            background: linear-gradient(135deg, {PRIMARY_BG} 0%, #0F172A 45%, #111827 100%);
-            color: {TEXT};
+            background: #F4F7FB;
+            color: #0F2544;
         }}
+
         section[data-testid="stSidebar"] {{
-            background: {SECONDARY_BG};
-            border-right: 1px solid {BORDER};
+            background: #FFFFFF;
+            border-right: 1px solid #D7DEE8;
         }}
-        section[data-testid="stSidebar"] * {{ color: {TEXT}; }}
+
+        section[data-testid="stSidebar"] * {{
+            color: #0F2544;
+        }}
+
         .block-container {{
             padding-top: 2rem;
             padding-bottom: 3rem;
             max-width: 1380px;
         }}
-        h1, h2, h3 {{ color: {TEXT}; letter-spacing: -0.03em; }}
+
+        h1, h2, h3 {{
+            color: #0F2544;
+            letter-spacing: -0.03em;
+        }}
+
         .top-brand {{
             display: flex;
             justify-content: space-between;
@@ -177,105 +188,134 @@ st.markdown(
             gap: 20px;
             margin-bottom: 18px;
         }}
-        .brand-box {{ display: flex; align-items: center; gap: 14px; }}
+
+        .brand-box {{
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }}
+
         .brand-logo {{
             width: 74px;
             height: 74px;
             border-radius: 18px;
             object-fit: contain;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid {BORDER};
+            background: #FFFFFF;
+            border: 1px solid #D7DEE8;
             padding: 8px;
+            box-shadow: 0 10px 24px rgba(15,37,68,0.08);
         }}
+
         .brand-name {{
-            color: {MUTED};
+            color: #0F2544;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }}
+
         .hero {{
-            background: radial-gradient(circle at top left, rgba(96, 165, 250, 0.18), transparent 40%),
-                        linear-gradient(135deg, rgba(21, 31, 50, 0.98), rgba(17, 24, 39, 0.98));
-            border: 1px solid {BORDER};
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+            border: 1px solid #D7DEE8;
+            border-left: 8px solid #0B2A4A;
             border-radius: 26px;
-            padding: 30px 34px;
+            padding: 34px 38px;
             margin-bottom: 24px;
-            box-shadow: 0 22px 60px rgba(0,0,0,0.28);
+            box-shadow: 0 18px 45px rgba(15,37,68,0.10);
         }}
+
         .hero-title {{
             font-size: 42px;
             line-height: 1.06;
             font-weight: 850;
-            color: {TEXT};
-            margin-bottom: 10px;
+            color: #0B2A4A;
+            margin-bottom: 12px;
         }}
+
         .hero-subtitle {{
-            color: {MUTED};
+            color: #64748B;
             font-size: 16px;
-            max-width: 900px;
+            max-width: 980px;
+            line-height: 1.65;
         }}
+
         .section-title {{
             font-size: 24px;
-            font-weight: 800;
-            color: {TEXT};
+            font-weight: 850;
+            color: #0B2A4A;
             margin: 28px 0 16px 0;
         }}
+
         .kpi-card {{
-            background: linear-gradient(180deg, rgba(21, 31, 50, 0.98), rgba(17, 24, 39, 0.98));
-            border: 1px solid {BORDER};
+            background: #FFFFFF;
+            border: 1px solid #D7DEE8;
             border-radius: 20px;
             padding: 19px 16px;
             min-height: 136px;
-            box-shadow: 0 16px 42px rgba(0,0,0,0.22);
+            box-shadow: 0 14px 34px rgba(15,37,68,0.08);
             overflow: hidden;
         }}
+
         .kpi-label {{
-            color: {MUTED};
+            color: #64748B;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 800;
             margin-bottom: 14px;
             min-height: 32px;
         }}
+
         .kpi-value {{
-            color: {WHITE};
+            color: #0B2A4A;
             font-size: clamp(22px, 1.9vw, 32px);
-            font-weight: 850;
+            font-weight: 900;
             letter-spacing: -0.04em;
             line-height: 1;
             white-space: nowrap;
         }}
+
         .kpi-caption {{
-            color: {BLUE};
+            color: #1D4ED8;
             font-size: 12px;
             margin-top: 14px;
             line-height: 1.35;
+            font-weight: 700;
         }}
+
         .info-box {{
-            background: rgba(30, 58, 95, 0.38);
-            border: 1px solid rgba(96, 165, 250, 0.35);
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
             border-radius: 18px;
             padding: 16px 18px;
-            color: {LIGHT_GRAY};
+            color: #0F2544;
             margin: 16px 0 12px 0;
             line-height: 1.55;
         }}
+
         .stButton button, .stDownloadButton button {{
             border-radius: 14px;
-            border: 1px solid {BORDER};
-            background: linear-gradient(135deg, {BLUE_DARK}, #2563EB);
+            border: 1px solid #0B2A4A;
+            background: linear-gradient(135deg, #0B2A4A, #1D4ED8);
             color: white;
-            font-weight: 700;
+            font-weight: 800;
         }}
+
         .stTabs [data-baseweb="tab"] {{
-            background: {CARD_BG};
+            background: #FFFFFF;
             border-radius: 14px;
             padding: 10px 18px;
-            border: 1px solid {BORDER};
+            border: 1px solid #D7DEE8;
+            color: #0F2544;
         }}
-        .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
-    
 
+        .stTabs [aria-selected="true"] {{
+            background: #0B2A4A;
+            color: #FFFFFF;
+        }}
+
+        div[data-testid="stDataFrame"] {{
+            background: #FFFFFF;
+            border-radius: 18px;
+        }}
     </style>
     """,
     unsafe_allow_html=True
@@ -340,14 +380,14 @@ def kpi_card(label, value, caption=""):
 def aplicar_layout(fig, titulo=None):
     fig.update_layout(
         title=dict(text=titulo or "", font=dict(size=18, color=TEXT, family="Arial"), x=0.02, y=0.95),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(17,24,39,0.55)",
+        paper_bgcolor="rgba(255,255,255,0)",
+        plot_bgcolor="#FFFFFF",
         font=dict(color=LIGHT_GRAY, family="Arial"),
         margin=dict(l=20, r=20, t=70, b=45),
         xaxis=dict(showgrid=False, zeroline=False, color=MUTED, linecolor=BORDER),
-        yaxis=dict(showgrid=True, gridcolor="rgba(229,231,235,0.10)", zeroline=False, color=MUTED, linecolor=BORDER),
-        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=LIGHT_GRAY)),
-        hoverlabel=dict(bgcolor=CARD_BG, bordercolor=BLUE, font=dict(color=WHITE))
+        yaxis=dict(showgrid=True, gridcolor="#E5E7EB", zeroline=False, color=MUTED, linecolor=BORDER),
+        legend=dict(bgcolor="rgba(255,255,255,0)", font=dict(color=TEXT)),
+        hoverlabel=dict(bgcolor=WHITE, bordercolor=BLUE, font=dict(color=TEXT))
     )
     return fig
 
@@ -719,7 +759,7 @@ def render_header(cliente=None):
         st.markdown(topo, unsafe_allow_html=True)
 
     logo_html = ""
-    if empresa_logo:
+    if empresa_logo and cliente is None:
         logo_html = f'<div style="margin-bottom:22px;"><img class="brand-logo" src="{empresa_logo}" style="width:96px;height:96px;" /></div>'
 
     hero = f'<div class="hero">{logo_html}<div class="hero-title">Dashboard de Aderência de Embarque</div><div class="hero-subtitle">Acompanhamento de aderência por cliente, com histórico comparativo, evolução operacional e controle de colaboradores sem embarque.</div></div>'

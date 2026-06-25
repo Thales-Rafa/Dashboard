@@ -211,3 +211,12 @@ Correções:
 - HTML do cabeçalho e cards de clientes sem indentação.
 - Evita que Streamlit/Markdown interprete o HTML como bloco de código.
 - Mantém logos clicáveis, filtro semanal e datas em português.
+
+
+## V5.20 - Visual corporativo claro
+
+- Tema visual alterado para branco, cinza claro e azul escuro.
+- Cards e gráficos com fundo claro.
+- Logo da Famatur não duplica dentro do hero no dashboard do cliente.
+- No ADM, logo da Famatur permanece dentro do bloco principal.
+- Mantém logos clicáveis dos clientes.
