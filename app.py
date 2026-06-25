@@ -206,13 +206,6 @@ st.markdown(
         .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
     
 
-
-        div[data-testid="stSelectbox"] label,
-        div[data-testid="stDateInput"] label {
-            color: #E5E7EB !important;
-            font-weight: 700 !important;
-        }
-
     </style>
     """,
     unsafe_allow_html=True
@@ -787,7 +780,7 @@ def render_dashboard_cliente(cliente):
             )
         with col_filtro3:
             st.markdown(
-                f"""
+                """
                 <div class="info-box">
                     Exibindo apenas o dia selecionado dentro do período importado.
                 </div>
@@ -803,6 +796,7 @@ def render_dashboard_cliente(cliente):
                 min_value=data_min_filtro,
                 max_value=data_max_filtro
             )
+
         if isinstance(filtro_intervalo, tuple) and len(filtro_intervalo) == 2:
             filtro_data_ini, filtro_data_fim = filtro_intervalo
         else:
@@ -810,7 +804,7 @@ def render_dashboard_cliente(cliente):
 
         with col_filtro3:
             st.markdown(
-                f"""
+                """
                 <div class="info-box">
                     Exibindo intervalo personalizado dentro da importação atual.
                 </div>

@@ -173,12 +173,8 @@ Correção:
 - Corrige `titulo_periodo`.
 
 
-## V5.12 - Filtro inline no dashboard do cliente
+## V5.13 - Filtro inline corrigido
 
-Mudança:
-- Os filtros do dashboard do cliente saíram da barra lateral.
-- Agora ficam no corpo do dashboard, logo abaixo das logos/cabeçalho.
-- Opções mantidas:
-  - Todo o período
-  - Por dia
-  - Intervalo personalizado
+- Filtros do cliente movidos da barra lateral para o corpo do dashboard.
+- CSS corrigido em bloco HTML válido.
+- Mantém correções de render_header e titulo_periodo.
