@@ -350,6 +350,73 @@ def metricas_importacao(importacao_id):
 def sem_embarque_importacao(importacao_id):
     return [s for s in db["sem_embarque"] if s["importacao_id"] == importacao_id]
 
+def remover_importacao(importacao_id):
+    db["importacoes"] = [i for i in db["importacoes"] if i["id"] != importacao_id]
+    db["metricas_diarias"] = [m for m in db["metricas_diarias"] if m["importacao_id"] != importacao_id]
+    db["sem_embarque"] = [s for s in db["sem_embarque"] if s["importacao_id"] != importacao_id]
+    save_db(db)
+
+def encontrar_importacao_semana(cliente_id, semana_inicio, semana_fim):
+    inicio_txt = str(semana_inicio)
+    fim_txt = str(semana_fim)
+    for i in db["importacoes"]:
+        if i["cliente_id"] == cliente_id and i["semana_inicio"] == inicio_txt and i["semana_fim"] == fim_txt:
+            return i
+    return None
+
+def status_adesao(valor_pct):
+    if valor_pct >= 85:
+        return "Bom"
+    if valor_pct >= 70:
+        return "Atenção"
+    return "Crítico"
+
+def status_faltantes(valor):
+    if valor <= 0:
+        return "Regularizado"
+    return "Necessário ação"
+
+def tabela_indicadores_adesao(importacao):
+    total_cadastrados = int(importacao.get("colaboradores_cadastrados", 0))
+    unicos_embarcaram = int(importacao.get("colaboradores_que_embarcaram", 0))
+    faltantes_aderir = max(total_cadastrados - unicos_embarcaram, 0)
+    adesao_pct = (unicos_embarcaram / total_cadastrados * 100) if total_cadastrados else 0
+
+    return pd.DataFrame([
+        {
+            "INDICADOR": "Passageiros que embarcaram (únicos)",
+            "VALOR": formatar_num(unicos_embarcaram),
+            "STATUS": "Em andamento" if unicos_embarcaram < total_cadastrados else "Completo"
+        },
+        {
+            "INDICADOR": "Porcentagem de adesão",
+            "VALOR": formatar_pct(adesao_pct),
+            "STATUS": status_adesao(adesao_pct)
+        },
+        {
+            "INDICADOR": "Faltantes para aderir",
+            "VALOR": formatar_num(faltantes_aderir),
+            "STATUS": status_faltantes(faltantes_aderir)
+        },
+        {
+            "INDICADOR": "Total de colaboradores cadastrados",
+            "VALOR": formatar_num(total_cadastrados),
+            "STATUS": "Base total"
+        },
+    ])
+
+def tabela_resumo_adesao(importacao):
+    total_cadastrados = int(importacao.get("colaboradores_cadastrados", 0))
+    unicos_embarcaram = int(importacao.get("colaboradores_que_embarcaram", 0))
+    faltantes = max(total_cadastrados - unicos_embarcaram, 0)
+
+    return pd.DataFrame([
+        {"STATUS": "Embarcaram", "VALOR": unicos_embarcaram},
+        {"STATUS": "Faltantes", "VALOR": faltantes},
+        {"STATUS": "Total cadastrados", "VALOR": total_cadastrados},
+    ])
+
+
 def gerar_link_cliente(cliente):
     app_url = db["settings"].get("app_url", "").strip().rstrip("/")
     if not app_url:
@@ -520,6 +587,40 @@ def render_dashboard_cliente(cliente):
         unsafe_allow_html=True
     )
 
+    st.markdown('<div class="section-title">Adesão de colaboradores</div>', unsafe_allow_html=True)
+    total_cadastrados = int(atual.get("colaboradores_cadastrados", 0))
+    unicos_embarcaram = int(atual.get("colaboradores_que_embarcaram", 0))
+    faltantes_aderir = max(total_cadastrados - unicos_embarcaram, 0)
+
+    col_pizza, col_tab1, col_tab2 = st.columns([1.1, 1.4, 0.9])
+
+    with col_pizza:
+        pizza_df = pd.DataFrame({
+            "Categoria": ["Embarcaram", "Faltantes"],
+            "Quantidade": [unicos_embarcaram, faltantes_aderir]
+        })
+        fig_pizza = px.pie(
+            pizza_df,
+            names="Categoria",
+            values="Quantidade",
+            hole=0.58,
+            color_discrete_sequence=[BLUE, "#CBD5E1"]
+        )
+        fig_pizza.update_traces(
+            textinfo="label+percent+value",
+            marker=dict(line=dict(color=PRIMARY_BG, width=2))
+        )
+        fig_pizza = aplicar_layout(fig_pizza, "Cadastrados x colaboradores que embarcaram")
+        st.plotly_chart(fig_pizza, use_container_width=True)
+
+    with col_tab1:
+        st.subheader("Indicadores de adesão")
+        st.dataframe(tabela_indicadores_adesao(atual), use_container_width=True, hide_index=True)
+
+    with col_tab2:
+        st.subheader("Resumo")
+        st.dataframe(tabela_resumo_adesao(atual), use_container_width=True, hide_index=True)
+
     aba1, aba2, aba3 = st.tabs(["Visão semanal", "Histórico", "Colaboradores sem embarque"])
 
     with aba1:
@@ -588,7 +689,7 @@ def render_admin():
     render_header()
     st.markdown('<div class="section-title">Painel administrativo</div>', unsafe_allow_html=True)
 
-    aba1, aba2, aba3, aba4 = st.tabs(["Visão geral ADM", "Clientes", "Nova importação semanal", "Configurações e links"])
+    aba1, aba2, aba3, aba4, aba5 = st.tabs(["Visão geral ADM", "Clientes", "Nova importação semanal", "Gerenciar importações", "Configurações e links"])
 
     with aba1:
         total_clientes = len(db["clientes"])
@@ -688,13 +789,26 @@ def render_admin():
             rel_embarque = st.file_uploader("Relatório de embarque", type=["xlsx", "xls"], key="rel_embarque_admin")
             base_colab = st.file_uploader("Arquivo de colaboradores cadastrados", type=["xlsx", "xls"], key="base_colab_admin")
 
+            importacao_existente = encontrar_importacao_semana(cliente["id"], semana_inicio, semana_fim)
+
+            if importacao_existente:
+                st.warning("Já existe uma importação salva para este cliente e este período.")
+                substituir = st.checkbox("Substituir importação existente desta semana", value=False)
+            else:
+                substituir = False
+
             if st.button("Processar e salvar semana"):
                 if rel_embarque is None or base_colab is None:
                     st.error("Envie os dois arquivos.")
                 elif semana_fim < semana_inicio:
                     st.error("A data final não pode ser menor que a inicial.")
+                elif importacao_existente and not substituir:
+                    st.error("Marque a opção de substituição ou altere o período.")
                 else:
                     try:
+                        if importacao_existente and substituir:
+                            remover_importacao(importacao_existente["id"])
+
                         registro = salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, rel_embarque, base_colab)
                         st.success("Semana salva com sucesso.")
                         st.json({
@@ -708,6 +822,65 @@ def render_admin():
                         st.error(f"Erro ao processar: {e}")
 
     with aba4:
+        st.subheader("Gerenciar importações salvas")
+
+        if not db["importacoes"]:
+            st.info("Nenhuma importação salva ainda.")
+        else:
+            clientes_map = {c["nome"]: c for c in db["clientes"]}
+            cliente_ger = st.selectbox("Cliente para gerenciar", list(clientes_map.keys()), key="cliente_gerenciar")
+            cliente_sel = clientes_map[cliente_ger]
+            importacoes = importacoes_cliente(cliente_sel["id"])
+
+            if not importacoes:
+                st.info("Este cliente ainda não possui importações.")
+            else:
+                tabela_imp = pd.DataFrame(importacoes)
+                tabela_exibir = tabela_imp[[
+                    "id", "semana_inicio", "semana_fim", "data_importacao",
+                    "total_esperado", "total_realizado", "aderencia", "colaboradores_sem_embarque"
+                ]].rename(columns={
+                    "id": "ID",
+                    "semana_inicio": "Semana início",
+                    "semana_fim": "Semana fim",
+                    "data_importacao": "Importado em",
+                    "total_esperado": "Esperado",
+                    "total_realizado": "Realizado",
+                    "aderencia": "Aderência (%)",
+                    "colaboradores_sem_embarque": "Sem embarque"
+                })
+                st.dataframe(tabela_exibir, use_container_width=True, hide_index=True)
+
+                opcoes = {
+                    f"{i['semana_inicio']} até {i['semana_fim']} | {formatar_pct(i['aderencia'])} | ID {i['id']}": i
+                    for i in importacoes
+                }
+                escolha = st.selectbox("Selecionar importação", list(opcoes.keys()))
+                imp = opcoes[escolha]
+
+                col_del1, col_del2 = st.columns([1, 2])
+                with col_del1:
+                    confirmar = st.checkbox("Confirmar exclusão desta importação")
+                with col_del2:
+                    if st.button("Excluir importação selecionada"):
+                        if confirmar:
+                            remover_importacao(imp["id"])
+                            st.success("Importação excluída.")
+                            st.rerun()
+                        else:
+                            st.error("Marque a confirmação antes de excluir.")
+
+        st.markdown(
+            """
+            <div class="info-box">
+                Para corrigir uma semana com arquivo errado, você pode excluir a importação aqui 
+                ou reprocessar a mesma semana na aba Nova importação semanal marcando a opção de substituição.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with aba5:
         st.subheader("URL pública do app")
         st.markdown("Cole aqui a URL pública que termina com `.streamlit.app`. Não use a URL do painel interno do Streamlit.")
         app_url = st.text_input("URL pública do app", value=db["settings"].get("app_url", ""), placeholder="https://dashboard-famatur.streamlit.app")

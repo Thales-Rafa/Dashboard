@@ -58,3 +58,22 @@ data/database.json
 ```
 
 Para uso contínuo real, a próxima etapa é migrar para Supabase/PostgreSQL.
+
+## V5.2
+
+Novidades:
+
+- Aba **Gerenciar importações**
+- Excluir importação errada
+- Substituir importação da mesma semana/cliente
+- Gráfico pizza comparando:
+  - colaboradores cadastrados que embarcaram
+  - colaboradores cadastrados faltantes
+- Tabela de indicadores com:
+  - indicador
+  - valor
+  - status
+- Tabela resumo:
+  - Embarcaram
+  - Faltantes
+  - Total cadastrados
