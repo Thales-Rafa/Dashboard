@@ -13,28 +13,314 @@ st.set_page_config(page_title="Dashboard de Aderência", layout="wide")
 
 st.markdown("""
 <style>
+/* ===========================
+   Base geral
+=========================== */
+html, body, [class*="css"] {
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+.stApp {
+    background: #F3F6FA !important;
+    color: #0B2A4A !important;
+}
+
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+    max-width: 1380px;
+}
+
+/* Esconder cromos padrão quando possível */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+[data-testid="stToolbar"] {visibility: hidden !important; height: 0 !important;}
+[data-testid="stDecoration"] {visibility: hidden;}
+[data-testid="stStatusWidget"] {visibility: hidden;}
+.stDeployButton {display: none;}
+
+/* ===========================
+   Sidebar
+=========================== */
+section[data-testid="stSidebar"] {
+    background: #FFFFFF !important;
+    border-right: 1px solid #D8E0EA !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: #0B2A4A !important;
+}
+
+/* ===========================
+   Títulos e textos
+=========================== */
+h1, h2, h3, h4, h5, h6,
+p, label, span, div {
+    color: #0B2A4A;
+}
+
+h1, h2, h3 {
+    letter-spacing: -0.03em;
+}
+
+.section-title {
+    font-size: 24px;
+    font-weight: 850;
+    color: #0B2A4A;
+    margin: 28px 0 16px 0;
+}
+
+/* ===========================
+   Header / marcas
+=========================== */
+.top-brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 22px;
+}
+
+.brand-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    object-fit: contain;
+    background: #FFFFFF;
+    border: 1px solid #D8E0EA;
+    padding: 8px;
+    box-shadow: 0 10px 24px rgba(11,42,74,0.08);
+}
+
+.brand-name {
+    color: #0B2A4A !important;
+    font-size: 13px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ===========================
+   Hero
+=========================== */
+.hero {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+    border: 1px solid #D8E0EA;
+    border-left: 8px solid #0B2A4A;
+    border-radius: 26px;
+    padding: 34px 38px;
+    margin-bottom: 28px;
+    box-shadow: 0 18px 45px rgba(11,42,74,0.10);
+}
+
+.hero-title {
+    font-size: 42px;
+    line-height: 1.08;
+    font-weight: 900;
+    color: #0B2A4A !important;
+    margin-bottom: 12px;
+}
+
+.hero-subtitle {
+    color: #5F6F85 !important;
+    font-size: 16px;
+    max-width: 980px;
+    line-height: 1.65;
+}
+
+/* ===========================
+   Cards KPI
+=========================== */
+.kpi-card {
+    background: #FFFFFF;
+    border: 1px solid #D8E0EA;
+    border-radius: 20px;
+    padding: 19px 16px;
+    min-height: 136px;
+    box-shadow: 0 14px 34px rgba(11,42,74,0.08);
+    overflow: hidden;
+}
+
+.kpi-label {
+    color: #5F6F85 !important;
+    font-size: 13px;
+    font-weight: 850;
+    margin-bottom: 14px;
+    min-height: 32px;
+}
+
+.kpi-value {
+    color: #0B2A4A !important;
+    font-size: clamp(22px, 1.9vw, 32px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.kpi-caption {
+    color: #1F5FAE !important;
+    font-size: 12px;
+    margin-top: 14px;
+    line-height: 1.35;
+    font-weight: 750;
+}
+
+/* ===========================
+   Boxes
+=========================== */
+.info-box {
+    background: #EAF2FF;
+    border: 1px solid #BBD4F8;
+    border-radius: 18px;
+    padding: 16px 18px;
+    color: #0B2A4A !important;
+    margin: 16px 0 12px 0;
+    line-height: 1.55;
+}
+
+.info-box * {
+    color: #0B2A4A !important;
+}
+
+/* ===========================
+   Inputs, selects, uploaders
+=========================== */
+.stTextInput input,
+.stNumberInput input,
+.stDateInput input,
+.stTextArea textarea,
+div[data-baseweb="select"] > div {
+    background: #FFFFFF !important;
+    color: #0B2A4A !important;
+    border: 1px solid #C8D3E0 !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+}
+
+.stTextInput label,
+.stNumberInput label,
+.stDateInput label,
+.stTextArea label,
+.stSelectbox label,
+.stMultiSelect label,
+.stFileUploader label,
+.stCheckbox label,
+.stRadio label {
+    color: #0B2A4A !important;
+    font-weight: 750 !important;
+}
+
+.stFileUploader section {
+    background: #FFFFFF !important;
+    border: 1px dashed #AFC1D6 !important;
+    border-radius: 16px !important;
+}
+
+.stFileUploader section * {
+    color: #0B2A4A !important;
+}
+
+input::placeholder {
+    color: #94A3B8 !important;
+}
+
+/* ===========================
+   Botões
+=========================== */
+.stButton button,
+.stDownloadButton button,
+button[kind="primary"],
+button[kind="secondary"] {
+    border-radius: 14px !important;
+    border: 1px solid #0B2A4A !important;
+    background: linear-gradient(135deg, #0B2A4A, #1F5FAE) !important;
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+    box-shadow: 0 10px 22px rgba(31,95,174,0.18) !important;
+}
+
+.stButton button:hover,
+.stDownloadButton button:hover {
+    filter: brightness(1.05);
+}
+
+/* ===========================
+   Abas
+=========================== */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 12px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: #FFFFFF !important;
+    border-radius: 14px !important;
+    padding: 10px 18px !important;
+    border: 1px solid #D8E0EA !important;
+    color: #0B2A4A !important;
+    box-shadow: 0 8px 20px rgba(11,42,74,0.05);
+}
+
+.stTabs [aria-selected="true"] {
+    background: #0B2A4A !important;
+    color: #FFFFFF !important;
+}
+
+.stTabs [aria-selected="true"] * {
+    color: #FFFFFF !important;
+}
+
+/* ===========================
+   Tabelas / Dataframes
+=========================== */
+[data-testid="stDataFrame"] {
+    background: #FFFFFF !important;
+    border: 1px solid #D8E0EA !important;
+    border-radius: 18px !important;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(11,42,74,0.07);
+}
+
+[data-testid="stTable"] {
+    background: #FFFFFF !important;
+    color: #0B2A4A !important;
+}
+
+/* ===========================
+   Cards de clientes ADM
+=========================== */
 .client-logo-section {
     margin-top: 24px;
     padding-top: 22px;
-    border-top: 1px solid #D7DEE8;
+    border-top: 1px solid #D8E0EA;
 }
+
 .client-logo-section-title {
-    color: #0B2A4A;
+    color: #0B2A4A !important;
     font-size: 15px;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     margin-bottom: 14px;
 }
+
 .client-logo-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
 }
+
 .client-logo-card {
     width: 145px;
     min-height: 126px;
-    border: 1px solid #D7DEE8;
+    border: 1px solid #D8E0EA;
     background: #FFFFFF;
     border-radius: 20px;
     padding: 14px;
@@ -44,13 +330,15 @@ st.markdown("""
     justify-content: space-between;
     text-decoration: none !important;
     transition: all .18s ease;
-    box-shadow: 0 12px 28px rgba(15,37,68,0.08);
+    box-shadow: 0 12px 28px rgba(11,42,74,0.08);
 }
+
 .client-logo-card:hover {
     transform: translateY(-2px);
-    border-color: #1D4ED8;
+    border-color: #1F5FAE;
     background: #F8FAFC;
 }
+
 .client-logo-img {
     width: 78px;
     height: 68px;
@@ -59,38 +347,27 @@ st.markdown("""
     background: #F1F5F9;
     padding: 8px;
 }
+
 .client-logo-placeholder {
     width: 78px;
     height: 68px;
     border-radius: 14px;
     background: #0B2A4A;
-    color: white;
+    color: white !important;
     display:flex;
     align-items:center;
     justify-content:center;
     font-size: 24px;
     font-weight: 900;
 }
+
 .client-logo-card span {
-    color: #0B2A4A;
+    color: #0B2A4A !important;
     font-size: 13px;
     font-weight: 900;
     text-align: center;
     margin-top: 10px;
 }
-</style>
-""", unsafe_allow_html=True)
-
-
-st.markdown("""
-<style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-[data-testid="stToolbar"] {visibility: hidden !important; height: 0% !important; position: fixed;}
-[data-testid="stDecoration"] {visibility: hidden;}
-[data-testid="stStatusWidget"] {visibility: hidden;}
-.stDeployButton {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -139,187 +416,19 @@ def save_db(db):
 
 db = load_db()
 
-PRIMARY_BG = "#F4F7FB"
+PRIMARY_BG = "#F3F6FA"
 SECONDARY_BG = "#FFFFFF"
 CARD_BG = "#FFFFFF"
-BORDER = "#D7DEE8"
-TEXT = "#0F2544"
-MUTED = "#64748B"
-BLUE = "#1D4ED8"
+BORDER = "#D8E0EA"
+TEXT = "#0B2A4A"
+MUTED = "#5F6F85"
+BLUE = "#1F5FAE"
 BLUE_DARK = "#0B2A4A"
 WHITE = "#FFFFFF"
-LIGHT_GRAY = "#E5E7EB"
+LIGHT_GRAY = "#E7EDF5"
 GREEN = "#22C55E"
 RED = "#EF4444"
 YELLOW = "#F59E0B"
-
-st.markdown(
-    f"""
-    <style>
-        .stApp {{
-            background: #F4F7FB;
-            color: #0F2544;
-        }}
-
-        section[data-testid="stSidebar"] {{
-            background: #FFFFFF;
-            border-right: 1px solid #D7DEE8;
-        }}
-
-        section[data-testid="stSidebar"] * {{
-            color: #0F2544;
-        }}
-
-        .block-container {{
-            padding-top: 2rem;
-            padding-bottom: 3rem;
-            max-width: 1380px;
-        }}
-
-        h1, h2, h3 {{
-            color: #0F2544;
-            letter-spacing: -0.03em;
-        }}
-
-        .top-brand {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 18px;
-        }}
-
-        .brand-box {{
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }}
-
-        .brand-logo {{
-            width: 74px;
-            height: 74px;
-            border-radius: 18px;
-            object-fit: contain;
-            background: #FFFFFF;
-            border: 1px solid #D7DEE8;
-            padding: 8px;
-            box-shadow: 0 10px 24px rgba(15,37,68,0.08);
-        }}
-
-        .brand-name {{
-            color: #0F2544;
-            font-size: 13px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }}
-
-        .hero {{
-            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
-            border: 1px solid #D7DEE8;
-            border-left: 8px solid #0B2A4A;
-            border-radius: 26px;
-            padding: 34px 38px;
-            margin-bottom: 24px;
-            box-shadow: 0 18px 45px rgba(15,37,68,0.10);
-        }}
-
-        .hero-title {{
-            font-size: 42px;
-            line-height: 1.06;
-            font-weight: 850;
-            color: #0B2A4A;
-            margin-bottom: 12px;
-        }}
-
-        .hero-subtitle {{
-            color: #64748B;
-            font-size: 16px;
-            max-width: 980px;
-            line-height: 1.65;
-        }}
-
-        .section-title {{
-            font-size: 24px;
-            font-weight: 850;
-            color: #0B2A4A;
-            margin: 28px 0 16px 0;
-        }}
-
-        .kpi-card {{
-            background: #FFFFFF;
-            border: 1px solid #D7DEE8;
-            border-radius: 20px;
-            padding: 19px 16px;
-            min-height: 136px;
-            box-shadow: 0 14px 34px rgba(15,37,68,0.08);
-            overflow: hidden;
-        }}
-
-        .kpi-label {{
-            color: #64748B;
-            font-size: 13px;
-            font-weight: 800;
-            margin-bottom: 14px;
-            min-height: 32px;
-        }}
-
-        .kpi-value {{
-            color: #0B2A4A;
-            font-size: clamp(22px, 1.9vw, 32px);
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            line-height: 1;
-            white-space: nowrap;
-        }}
-
-        .kpi-caption {{
-            color: #1D4ED8;
-            font-size: 12px;
-            margin-top: 14px;
-            line-height: 1.35;
-            font-weight: 700;
-        }}
-
-        .info-box {{
-            background: #EFF6FF;
-            border: 1px solid #BFDBFE;
-            border-radius: 18px;
-            padding: 16px 18px;
-            color: #0F2544;
-            margin: 16px 0 12px 0;
-            line-height: 1.55;
-        }}
-
-        .stButton button, .stDownloadButton button {{
-            border-radius: 14px;
-            border: 1px solid #0B2A4A;
-            background: linear-gradient(135deg, #0B2A4A, #1D4ED8);
-            color: white;
-            font-weight: 800;
-        }}
-
-        .stTabs [data-baseweb="tab"] {{
-            background: #FFFFFF;
-            border-radius: 14px;
-            padding: 10px 18px;
-            border: 1px solid #D7DEE8;
-            color: #0F2544;
-        }}
-
-        .stTabs [aria-selected="true"] {{
-            background: #0B2A4A;
-            color: #FFFFFF;
-        }}
-
-        div[data-testid="stDataFrame"] {{
-            background: #FFFFFF;
-            border-radius: 18px;
-        }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 def normalizar_texto(valor):
     if pd.isna(valor):
@@ -379,15 +488,33 @@ def kpi_card(label, value, caption=""):
 
 def aplicar_layout(fig, titulo=None):
     fig.update_layout(
-        title=dict(text=titulo or "", font=dict(size=18, color=TEXT, family="Arial"), x=0.02, y=0.95),
+        title=dict(
+            text=titulo or "",
+            font=dict(size=18, color="#0B2A4A", family="Arial"),
+            x=0.02,
+            y=0.95
+        ),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="#FFFFFF",
-        font=dict(color=LIGHT_GRAY, family="Arial"),
+        font=dict(color="#0B2A4A", family="Arial"),
         margin=dict(l=20, r=20, t=70, b=45),
-        xaxis=dict(showgrid=False, zeroline=False, color=MUTED, linecolor=BORDER),
-        yaxis=dict(showgrid=True, gridcolor="#E5E7EB", zeroline=False, color=MUTED, linecolor=BORDER),
-        legend=dict(bgcolor="rgba(255,255,255,0)", font=dict(color=TEXT)),
-        hoverlabel=dict(bgcolor=WHITE, bordercolor=BLUE, font=dict(color=TEXT))
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            color="#5F6F85",
+            linecolor="#D8E0EA",
+            title_font=dict(color="#5F6F85")
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="#E5EAF1",
+            zeroline=False,
+            color="#5F6F85",
+            linecolor="#D8E0EA",
+            title_font=dict(color="#5F6F85")
+        ),
+        legend=dict(bgcolor="rgba(255,255,255,0)", font=dict(color="#0B2A4A")),
+        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#1F5FAE", font=dict(color="#0B2A4A"))
     )
     return fig
 
@@ -1083,6 +1210,15 @@ def render_admin():
                 ultimo_esperado=("total_esperado", "last"),
                 ultima_importacao=("data_importacao", "last")
             )
+            resumo["aderencia_media"] = resumo["aderencia_media"].map(lambda x: formatar_pct(x))
+            resumo = resumo.rename(columns={
+                "cliente_nome": "Cliente",
+                "importacoes": "Importações",
+                "aderencia_media": "Aderência média",
+                "ultimo_realizado": "Último realizado",
+                "ultimo_esperado": "Último esperado",
+                "ultima_importacao": "Última importação"
+            })
             st.dataframe(resumo, use_container_width=True, hide_index=True)
 
     with aba2:

@@ -213,10 +213,14 @@ Correções:
 - Mantém logos clicáveis, filtro semanal e datas em português.
 
 
-## V5.20 - Visual corporativo claro
+## V5.21 - Tema claro revisado completo
 
-- Tema visual alterado para branco, cinza claro e azul escuro.
-- Cards e gráficos com fundo claro.
-- Logo da Famatur não duplica dentro do hero no dashboard do cliente.
-- No ADM, logo da Famatur permanece dentro do bloco principal.
-- Mantém logos clicáveis dos clientes.
+Revisão visual completa:
+- Fundo claro.
+- Cards brancos.
+- Inputs, selects, uploads e botões revisados.
+- Tabelas e dataframes com estilo claro.
+- Gráficos Plotly com fundo claro.
+- Paleta: branco, cinza claro e azul escuro.
+- Cabeçalho sem duplicação visual.
+- Mantém filtros semanais, personalizados, CRUD e logos clicáveis.
