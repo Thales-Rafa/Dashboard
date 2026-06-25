@@ -171,3 +171,14 @@ Correção:
 - Cabeçalho não quebra sem logo ou configuração.
 - Mantém filtros no link público do cliente.
 - Corrige `titulo_periodo`.
+
+
+## V5.12 - Filtro inline no dashboard do cliente
+
+Mudança:
+- Os filtros do dashboard do cliente saíram da barra lateral.
+- Agora ficam no corpo do dashboard, logo abaixo das logos/cabeçalho.
+- Opções mantidas:
+  - Todo o período
+  - Por dia
+  - Intervalo personalizado

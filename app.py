@@ -206,6 +206,13 @@ st.markdown(
         .stTabs [aria-selected="true"] {{ background: {BLUE_DARK}; }}
     
 
+
+        div[data-testid="stSelectbox"] label,
+        div[data-testid="stDateInput"] label {
+            color: #E5E7EB !important;
+            font-weight: 700 !important;
+        }
+
     </style>
     """,
     unsafe_allow_html=True
@@ -756,34 +763,70 @@ def render_dashboard_cliente(cliente):
         data_min_filtro = date.today()
         data_max_filtro = date.today()
 
-    st.sidebar.markdown("### Filtros do cliente")
-    modo_filtro = st.sidebar.radio(
-        "Visualizar",
-        ["Todo o período", "Por dia", "Intervalo personalizado"],
-        index=0
-    )
+    st.markdown('<div class="section-title">Filtros</div>', unsafe_allow_html=True)
+
+    col_filtro1, col_filtro2, col_filtro3 = st.columns([1.1, 1.2, 1.7])
+
+    with col_filtro1:
+        modo_filtro = st.selectbox(
+            "Visualizar",
+            ["Todo o período", "Por dia", "Intervalo personalizado"],
+            index=0
+        )
 
     filtro_data_ini = None
     filtro_data_fim = None
 
     if modo_filtro == "Por dia":
-        filtro_data_ini = st.sidebar.date_input(
-            "Dia",
-            value=data_min_filtro,
-            min_value=data_min_filtro,
-            max_value=data_max_filtro
-        )
+        with col_filtro2:
+            filtro_data_ini = st.date_input(
+                "Dia",
+                value=data_min_filtro,
+                min_value=data_min_filtro,
+                max_value=data_max_filtro
+            )
+        with col_filtro3:
+            st.markdown(
+                f"""
+                <div class="info-box">
+                    Exibindo apenas o dia selecionado dentro do período importado.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
     elif modo_filtro == "Intervalo personalizado":
-        filtro_intervalo = st.sidebar.date_input(
-            "Intervalo",
-            value=(data_min_filtro, data_max_filtro),
-            min_value=data_min_filtro,
-            max_value=data_max_filtro
-        )
+        with col_filtro2:
+            filtro_intervalo = st.date_input(
+                "Intervalo",
+                value=(data_min_filtro, data_max_filtro),
+                min_value=data_min_filtro,
+                max_value=data_max_filtro
+            )
         if isinstance(filtro_intervalo, tuple) and len(filtro_intervalo) == 2:
             filtro_data_ini, filtro_data_fim = filtro_intervalo
         else:
             filtro_data_ini, filtro_data_fim = data_min_filtro, data_max_filtro
+
+        with col_filtro3:
+            st.markdown(
+                f"""
+                <div class="info-box">
+                    Exibindo intervalo personalizado dentro da importação atual.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+    else:
+        with col_filtro2:
+            st.markdown(
+                f"""
+                <div class="info-box">
+                    Período completo: {data_min_filtro.strftime('%d/%m/%Y')} até {data_max_filtro.strftime('%d/%m/%Y')}.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
     metricas_filtradas = filtrar_metricas_por_periodo(metricas_base, modo_filtro, filtro_data_ini, filtro_data_fim)
     resumo_filtro = recalcular_resumo_metricas(metricas_filtradas, atual)
