@@ -224,3 +224,13 @@ Revisão visual completa:
 - Paleta: branco, cinza claro e azul escuro.
 - Cabeçalho sem duplicação visual.
 - Mantém filtros semanais, personalizados, CRUD e logos clicáveis.
+
+
+## V5.22 - Tema claro total
+
+Correções:
+- Adicionado `.streamlit/config.toml` forçando tema claro nativo do Streamlit.
+- Revisão agressiva de CSS para inputs, uploads, botões, selects, tabs e tabelas.
+- Tabelas principais convertidas para `st.table` para evitar dataframe escuro.
+- Gráficos em tema claro.
+- Mantém filtros semanais, CRUD, logos clicáveis e datas em português.
