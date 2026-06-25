@@ -960,14 +960,46 @@ def render_dashboard_cliente(cliente):
             st.dataframe(tabela, use_container_width=True, hide_index=True)
 
 def render_admin():
-    st.sidebar.markdown("### Acesso ADM")
-    senha = st.sidebar.text_input("Senha ADM", type="password")
     senha_correta = st.secrets.get("ADMIN_PASSWORD", "admin123")
 
-    if senha != senha_correta:
-        st.warning("Informe a senha de administrador para acessar todos os clientes.")
-        st.info("No MVP, a senha padrão é admin123. Troque isso no Streamlit Secrets.")
+    if "adm_autenticado" not in st.session_state:
+        st.session_state["adm_autenticado"] = False
+
+    if not st.session_state["adm_autenticado"]:
+        st.markdown(
+            """
+            <div class="hero">
+                <div class="hero-title">Acesso Administrativo</div>
+                <div class="hero-subtitle">
+                    Informe a senha para acessar o painel com todos os clientes, importações e configurações.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        col_login1, col_login2, col_login3 = st.columns([1, 1.2, 1])
+
+        with col_login2:
+            senha = st.text_input("Senha ADM", type="password")
+            entrar = st.button("Entrar no painel ADM")
+
+            if entrar:
+                if senha == senha_correta:
+                    st.session_state["adm_autenticado"] = True
+                    st.rerun()
+                else:
+                    st.error("Senha incorreta.")
+
+            st.info("No MVP, a senha padrão é admin123. Troque isso no Streamlit Secrets.")
+
         return
+
+    with st.sidebar:
+        st.markdown("### Painel ADM")
+        if st.button("Sair do ADM"):
+            st.session_state["adm_autenticado"] = False
+            st.rerun()
 
     render_header()
     st.markdown('<div class="section-title">Painel administrativo</div>', unsafe_allow_html=True)

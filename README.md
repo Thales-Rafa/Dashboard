@@ -178,3 +178,10 @@ Correção:
 - Base: V5.11 estável.
 - Move filtros do dashboard público do cliente para o corpo da página.
 - Não adiciona CSS extra, para evitar erros de `NameError`.
+
+
+## V5.15 - Login ADM no corpo da página
+
+- Campo de senha ADM saiu da barra lateral.
+- Login agora aparece no centro da página.
+- Após login, o ADM pode sair pelo botão na lateral.
