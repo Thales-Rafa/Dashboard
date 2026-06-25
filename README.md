@@ -235,21 +235,23 @@ Correções:
 - Gráficos em tema claro.
 - Mantém filtros semanais, CRUD, logos clicáveis e datas em português.
 
+## Correção importante de deploy
 
-## Tema claro
+O arquivo `app.py` precisa ficar na raiz do projeto e começar com código Python, por exemplo:
 
-Esta versão foi empacotada com tema claro forçado em dois pontos:
+```python
+import streamlit as st
+```
 
-1. `.streamlit/config.toml`, que define o tema nativo do Streamlit como `light`.
-2. CSS adicional em `app.py`, para impedir que inputs, tabelas, dropdowns, sidebar e gráficos herdem aparência escura do navegador ou do Streamlit Cloud.
+O conteúdo abaixo não pode ficar dentro do `app.py`:
 
-Para publicar no Streamlit Cloud, envie a pasta inteira mantendo a estrutura:
+```toml
+[theme]
+base = "light"
+```
+
+Esse conteúdo fica exclusivamente em:
 
 ```text
 .streamlit/config.toml
-app.py
-requirements.txt
-runtime.txt
-pyproject.toml
-README.md
 ```
