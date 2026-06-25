@@ -1,19 +1,28 @@
-# Dashboard de Aderência - V5 Multi-clientes
+# Dashboard de Aderência - V5.1 Link Público Corrigido
 
 Sistema em Streamlit para acompanhamento semanal de aderência de embarque por cliente.
 
-## Recursos
+## Correção principal da V5.1
 
-- Painel ADM com senha
-- Cadastro de múltiplos clientes
-- Upload de logo da sua empresa
-- Upload de logo do cliente
-- Importação semanal por cliente
-- Histórico semanal de aderência
-- Comparativo semana atual x semana anterior
-- Link individual por cliente com token
-- Cliente visualiza apenas o próprio dashboard
-- Lista de colaboradores sem embarque por semana
+O link do cliente não usa mais placeholder fixo `SEU-APP`.
+
+Agora o ADM informa a URL pública real do app em:
+
+```text
+Configurações e links > URL pública do app
+```
+
+Exemplo:
+
+```text
+https://dashboard-famatur.streamlit.app
+```
+
+Depois disso, os links dos clientes são gerados assim:
+
+```text
+https://dashboard-famatur.streamlit.app/?cliente=total-express&token=TOKEN
+```
 
 ## Acesso ADM
 
@@ -29,15 +38,18 @@ Recomendado configurar no Streamlit Secrets:
 ADMIN_PASSWORD = "sua-senha-forte"
 ```
 
-## Link do cliente
+## Recursos
 
-Cada cliente recebe link com slug e token:
+- Painel ADM
+- Cadastro de clientes
+- Logo da sua empresa
+- Logo por cliente
+- Histórico semanal
+- Comparativo semanal
+- Link público individual por cliente com token
+- Cliente vê apenas o próprio dashboard
 
-```text
-https://SEU-APP.streamlit.app/?cliente=total-express&token=TOKEN
-```
-
-## Importante
+## Observação
 
 Esta versão usa armazenamento local em JSON:
 
@@ -45,4 +57,4 @@ Esta versão usa armazenamento local em JSON:
 data/database.json
 ```
 
-Serve para validar o fluxo. Para uso contínuo e seguro, a próxima etapa recomendada é migrar para Supabase/PostgreSQL.
+Para uso contínuo real, a próxima etapa é migrar para Supabase/PostgreSQL.
