@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 import json
 import base64
 import secrets
@@ -276,6 +277,35 @@ def achar_coluna(df, opcoes):
                 return col
     return None
 
+def periodo_relatorio_embarque(uploaded_file):
+    if uploaded_file is None:
+        return None, None, None
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    df = pd.read_excel(uploaded_file)
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    df = limpar_colunas(df)
+    col_data = achar_coluna(df, ["DATA/HORA", "DATA HORA", "DATA", "HORARIO", "HORÁRIO"])
+
+    if col_data is None:
+        return None, None, 0
+
+    datas = pd.to_datetime(df[col_data], dayfirst=True, errors="coerce").dropna()
+
+    if datas.empty:
+        return None, None, 0
+
+    return datas.dt.date.min(), datas.dt.date.max(), int(datas.shape[0])
+
 def preparar_embarques(df, cliente_nome):
     df = limpar_colunas(df)
     mapa = {
@@ -472,6 +502,15 @@ def gerar_link_cliente(cliente):
     return f"{app_url}/?cliente={cliente['slug']}&token={cliente['token']}"
 
 def salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, embarques_file, colaboradores_file):
+    try:
+        embarques_file.seek(0)
+    except Exception:
+        pass
+    try:
+        colaboradores_file.seek(0)
+    except Exception:
+        pass
+
     embarques_df = preparar_embarques(pd.read_excel(embarques_file), cliente["nome"])
     colaboradores_df = preparar_colaboradores(pd.read_excel(colaboradores_file), cliente["nome"])
 
@@ -870,11 +909,40 @@ def render_admin():
             cliente_nome = st.selectbox("Cliente", list(nomes.keys()))
             cliente = nomes[cliente_nome]
 
-            col_data1, col_data2 = st.columns(2)
-            with col_data1:
-                semana_inicio = st.date_input("Início da semana", value=date.today())
-            with col_data2:
-                semana_fim = st.date_input("Fim da semana", value=date.today())
+            rel_embarque = st.file_uploader("Relatório de embarque", type=["xlsx", "xls"], key="rel_embarque_admin")
+            base_colab = st.file_uploader("Arquivo de colaboradores cadastrados", type=["xlsx", "xls"], key="base_colab_admin")
+
+            periodo_min, periodo_max, qtd_linhas_relatorio = periodo_relatorio_embarque(rel_embarque)
+
+            if periodo_min and periodo_max:
+                st.markdown(
+                    f"""
+                    <div class="info-box">
+                        <strong>Período identificado no relatório de embarque:</strong> {periodo_min.strftime('%d/%m/%Y')} até {periodo_max.strftime('%d/%m/%Y')}.
+                        <br>
+                        <strong>Registros encontrados no relatório:</strong> {formatar_num(qtd_linhas_relatorio)}.
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                usar_periodo_arquivo = st.checkbox("Usar automaticamente o período identificado no relatório", value=True)
+            else:
+                usar_periodo_arquivo = False
+                if rel_embarque is not None:
+                    st.warning("Não consegui identificar automaticamente o período do relatório. Selecione manualmente.")
+
+            if periodo_min and periodo_max and usar_periodo_arquivo:
+                semana_inicio = periodo_min
+                semana_fim = periodo_max
+                st.info(f"Período selecionado automaticamente: {semana_inicio.strftime('%d/%m/%Y')} até {semana_fim.strftime('%d/%m/%Y')}.")
+            else:
+                col_data1, col_data2 = st.columns(2)
+                valor_inicio = periodo_min if periodo_min else date.today()
+                valor_fim = periodo_max if periodo_max else date.today()
+                with col_data1:
+                    semana_inicio = st.date_input("Início da semana/período", value=valor_inicio)
+                with col_data2:
+                    semana_fim = st.date_input("Fim da semana/período", value=valor_fim)
 
             embarques_por_dia = st.number_input("Embarques esperados por colaborador/dia", min_value=1, max_value=10, value=2, step=1)
             preset = st.selectbox("Dias que a operação roda", ["Segunda a sexta", "Segunda a sábado", "Segunda a domingo", "Personalizado"], index=2)
@@ -890,18 +958,21 @@ def render_admin():
                 escolhidos = st.multiselect("Selecione os dias", list(mapa.keys()), default=list(mapa.keys()))
                 dias_semana = [mapa[d] for d in escolhidos]
 
-            rel_embarque = st.file_uploader("Relatório de embarque", type=["xlsx", "xls"], key="rel_embarque_admin")
-            base_colab = st.file_uploader("Arquivo de colaboradores cadastrados", type=["xlsx", "xls"], key="base_colab_admin")
+            if rel_embarque is not None and periodo_min and periodo_max:
+                if semana_fim < periodo_min or semana_inicio > periodo_max:
+                    st.error("O período selecionado não cruza com as datas do relatório de embarque. O realizado ficará zerado.")
+                elif semana_inicio < periodo_min or semana_fim > periodo_max:
+                    st.warning("O período selecionado é maior do que o período encontrado no relatório. Dias sem registro entrarão como realizado zero.")
 
             importacao_existente = encontrar_importacao_semana(cliente["id"], semana_inicio, semana_fim)
 
             if importacao_existente:
                 st.warning("Já existe uma importação salva para este cliente e este período.")
-                substituir = st.checkbox("Substituir importação existente desta semana", value=False)
+                substituir = st.checkbox("Substituir importação existente desta semana/período", value=False)
             else:
                 substituir = False
 
-            if st.button("Processar e salvar semana"):
+            if st.button("Processar e salvar período"):
                 if rel_embarque is None or base_colab is None:
                     st.error("Envie os dois arquivos.")
                 elif semana_fim < semana_inicio:
@@ -914,9 +985,10 @@ def render_admin():
                             remover_importacao(importacao_existente["id"])
 
                         registro = salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, rel_embarque, base_colab)
-                        st.success("Semana salva com sucesso.")
+                        st.success("Período salvo com sucesso.")
                         st.json({
                             "Cliente": registro["cliente_nome"],
+                            "Período": f"{registro['semana_inicio']} até {registro['semana_fim']}",
                             "Aderência": formatar_pct(registro["aderencia"]),
                             "Esperado": registro["total_esperado"],
                             "Realizado": registro["total_realizado"],

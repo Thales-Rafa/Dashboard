@@ -101,3 +101,14 @@ Novidades:
   - editar nome/logo da operação
   - baixar backup JSON
   - limpar banco total
+
+
+## V5.4
+
+Correções:
+
+- Corrige erro `NameError` no gráfico de pizza importando `plotly.express`.
+- Identifica automaticamente o período real do relatório de embarque.
+- Permite usar automaticamente o período encontrado no arquivo.
+- Mostra alerta quando o período selecionado não bate com as datas do relatório.
+- Evita importações com realizado zerado por período selecionado errado.
