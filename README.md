@@ -195,3 +195,11 @@ Correção:
 - Logo da empresa aparece dentro do bloco principal no ADM.
 - Logos dos clientes aparecem abaixo do subtítulo no ADM e são clicáveis.
 - CSS dos cards de logo foi inserido em bloco seguro, evitando NameError.
+
+
+## V5.18 - Correção HTML renderizado
+
+Correções:
+- Corrigido cabeçalho que estava exibindo HTML como texto/código.
+- Logos dos clientes agora são renderizadas com `st.markdown(..., unsafe_allow_html=True)` diretamente.
+- Mantém filtro semanal, datas em português e logos clicáveis.

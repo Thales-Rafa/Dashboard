@@ -710,10 +710,11 @@ def html_logo_cliente(cliente):
 def render_clientes_logos_admin():
     clientes_ativos = [c for c in db.get("clientes", []) if c.get("ativo", True)]
     if not clientes_ativos:
-        return ""
+        return
 
     cards = "".join([html_logo_cliente(c) for c in clientes_ativos])
-    return f"""
+
+    html = f"""
     <div class="client-logo-section">
         <div class="client-logo-section-title">Dashboards dos clientes</div>
         <div class="client-logo-grid">
@@ -722,109 +723,7 @@ def render_clientes_logos_admin():
     </div>
     """
 
-
-def salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, embarques_file, colaboradores_file):
-    try:
-        embarques_file.seek(0)
-    except Exception:
-        pass
-    try:
-        colaboradores_file.seek(0)
-    except Exception:
-        pass
-
-    embarques_df = preparar_embarques(pd.read_excel(embarques_file), cliente["nome"])
-    colaboradores_df = preparar_colaboradores(pd.read_excel(colaboradores_file), cliente["nome"])
-
-    embarques_df = embarques_df[
-        (embarques_df["DATA"] >= semana_inicio) &
-        (embarques_df["DATA"] <= semana_fim)
-    ].copy()
-
-    datas = datas_operacao(semana_inicio, semana_fim, dias_semana)
-    if not datas:
-        raise ValueError("Nenhum dia de operação selecionado no período.")
-
-    nomes_base = set(colaboradores_df["NOME_KEY"].unique())
-    nomes_emb = set(embarques_df["PASSAGEIRO_KEY"].unique())
-
-    metricas = []
-    total_esperado = 0
-    total_realizado = 0
-
-    for d in datas:
-        if colaboradores_df["DATA_CADASTRO"].notna().any():
-            elegiveis = colaboradores_df[
-                (colaboradores_df["DATA_CADASTRO"].isna()) |
-                (colaboradores_df["DATA_CADASTRO"].dt.date <= d)
-            ]
-        else:
-            elegiveis = colaboradores_df
-
-        cadastrados_dia = elegiveis["NOME_KEY"].nunique()
-        esperado = cadastrados_dia * embarques_por_dia
-        realizado = int((embarques_df["DATA"] == d).sum())
-        aderencia = (realizado / esperado * 100) if esperado else 0
-        faltas = max(esperado - realizado, 0)
-
-        total_esperado += esperado
-        total_realizado += realizado
-
-        metricas.append({
-            "data": str(d),
-            "colaboradores_cadastrados": int(cadastrados_dia),
-            "esperado": int(esperado),
-            "realizado": int(realizado),
-            "aderencia": float(aderencia),
-            "faltas": int(faltas)
-        })
-
-    aderencia_total = (total_realizado / total_esperado * 100) if total_esperado else 0
-    faltas_total = max(total_esperado - total_realizado, 0)
-    sem_emb_keys = nomes_base - nomes_emb
-    sem_emb_df = colaboradores_df[colaboradores_df["NOME_KEY"].isin(sem_emb_keys)].copy()
-
-    importacao_id = secrets.token_hex(8)
-    registro = {
-        "id": importacao_id,
-        "cliente_id": cliente["id"],
-        "cliente_nome": cliente["nome"],
-        "semana_inicio": str(semana_inicio),
-        "semana_fim": str(semana_fim),
-        "data_importacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-        "dias_operacao": len(datas),
-        "dias_operacao_config": ",".join(map(str, dias_semana)),
-        "embarques_por_colaborador_dia": int(embarques_por_dia),
-        "colaboradores_cadastrados": int(colaboradores_df["NOME_KEY"].nunique()),
-        "colaboradores_que_embarcaram": int(embarques_df["PASSAGEIRO_KEY"].nunique()),
-        "total_esperado": int(total_esperado),
-        "total_realizado": int(total_realizado),
-        "aderencia": float(aderencia_total),
-        "faltas_estimadas": int(faltas_total),
-        "colaboradores_sem_embarque": int(sem_emb_df.shape[0]),
-        "arquivo_embarque": embarques_file.name,
-        "arquivo_colaboradores": colaboradores_file.name
-    }
-
-    db["importacoes"].append(registro)
-
-    for m in metricas:
-        m["importacao_id"] = importacao_id
-        m["cliente_id"] = cliente["id"]
-        db["metricas_diarias"].append(m)
-
-    for _, row in sem_emb_df.iterrows():
-        db["sem_embarque"].append({
-            "importacao_id": importacao_id,
-            "cliente_id": cliente["id"],
-            "nome": row.get("NOME_TRATADO", ""),
-            "matricula": row.get("MATRICULA_TRATADA", ""),
-            "linha": row.get("LINHA_TRATADA", ""),
-            "turno": row.get("TURNO_TRATADO", "")
-        })
-
-    save_db(db)
-    return registro
+    st.markdown(html, unsafe_allow_html=True)
 
 def render_header(cliente=None):
     settings = db.get("settings", {}) if isinstance(db, dict) else {}
@@ -838,21 +737,22 @@ def render_header(cliente=None):
         cliente_logo = cliente.get("logo", "") or ""
         cliente_nome = cliente.get("nome", "") or ""
 
+    # Topo com marcas apenas na visão do cliente.
     if cliente:
-        topo_marcas = f"""
-        <div class="top-brand">
-            <div>{imagem_html(empresa_logo, empresa_nome)}</div>
-            <div>{imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""}</div>
-        </div>
-        """
-        logos_clientes_html = ""
-    else:
-        topo_marcas = ""
-        logos_clientes_html = render_clientes_logos_admin()
+        st.markdown(
+            f"""
+            <div class="top-brand">
+                <div>{imagem_html(empresa_logo, empresa_nome)}</div>
+                <div>{imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    empresa_logo_hero = ""
+    # Bloco principal
+    logo_html = ""
     if empresa_logo:
-        empresa_logo_hero = f"""
+        logo_html = f"""
         <div style="margin-bottom: 22px;">
             <img class="brand-logo" src="{empresa_logo}" style="width: 96px; height: 96px;" />
         </div>
@@ -860,19 +760,21 @@ def render_header(cliente=None):
 
     st.markdown(
         f"""
-        {topo_marcas}
         <div class="hero">
-            {empresa_logo_hero}
+            {logo_html}
             <div class="hero-title">Dashboard de Aderência de Embarque</div>
             <div class="hero-subtitle">
                 Acompanhamento de aderência por cliente, com histórico comparativo,
                 evolução operacional e controle de colaboradores sem embarque.
             </div>
-            {logos_clientes_html}
         </div>
         """,
         unsafe_allow_html=True
     )
+
+    # No ADM, mostra logos clicáveis dos clientes abaixo do bloco principal.
+    if cliente is None:
+        render_clientes_logos_admin()
 
 def render_dashboard_cliente(cliente):
     render_header(cliente)
