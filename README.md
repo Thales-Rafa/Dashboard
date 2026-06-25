@@ -203,3 +203,11 @@ Correções:
 - Corrigido cabeçalho que estava exibindo HTML como texto/código.
 - Logos dos clientes agora são renderizadas com `st.markdown(..., unsafe_allow_html=True)` diretamente.
 - Mantém filtro semanal, datas em português e logos clicáveis.
+
+
+## V5.19 - Correção de indentação HTML
+
+Correções:
+- HTML do cabeçalho e cards de clientes sem indentação.
+- Evita que Streamlit/Markdown interprete o HTML como bloco de código.
+- Mantém logos clicáveis, filtro semanal e datas em português.

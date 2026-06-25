@@ -321,18 +321,9 @@ def imagem_html(src, nome):
     nome = nome or ""
 
     if src:
-        return f"""
-        <div class="brand-box">
-            <img class="brand-logo" src="{src}" />
-            <div><div class="brand-name">{nome}</div></div>
-        </div>
-        """
+        return f'<div class="brand-box"><img class="brand-logo" src="{src}" /><div><div class="brand-name">{nome}</div></div></div>'
 
-    return f"""
-    <div class="brand-box">
-        <div><div class="brand-name">{nome}</div></div>
-    </div>
-    """
+    return f'<div class="brand-box"><div><div class="brand-name">{nome}</div></div></div>'
 
 def kpi_card(label, value, caption=""):
     st.markdown(
@@ -700,12 +691,7 @@ def html_logo_cliente(cliente):
         iniciais = "".join([p[:1] for p in nome.split()[:2]]).upper()
         logo_html = f'<div class="client-logo-placeholder">{iniciais}</div>'
 
-    return f"""
-    <a class="client-logo-card" href="{link}" target="_blank" title="Abrir dashboard público de {nome}">
-        {logo_html}
-        <span>{nome}</span>
-    </a>
-    """
+    return f'<a class="client-logo-card" href="{link}" target="_blank" title="Abrir dashboard público de {nome}">{logo_html}<span>{nome}</span></a>'
 
 def render_clientes_logos_admin():
     clientes_ativos = [c for c in db.get("clientes", []) if c.get("ativo", True)]
@@ -713,16 +699,7 @@ def render_clientes_logos_admin():
         return
 
     cards = "".join([html_logo_cliente(c) for c in clientes_ativos])
-
-    html = f"""
-    <div class="client-logo-section">
-        <div class="client-logo-section-title">Dashboards dos clientes</div>
-        <div class="client-logo-grid">
-            {cards}
-        </div>
-    </div>
-    """
-
+    html = f'<div class="client-logo-section"><div class="client-logo-section-title">Dashboards dos clientes</div><div class="client-logo-grid">{cards}</div></div>'
     st.markdown(html, unsafe_allow_html=True)
 
 def render_header(cliente=None):
@@ -737,42 +714,17 @@ def render_header(cliente=None):
         cliente_logo = cliente.get("logo", "") or ""
         cliente_nome = cliente.get("nome", "") or ""
 
-    # Topo com marcas apenas na visão do cliente.
     if cliente:
-        st.markdown(
-            f"""
-            <div class="top-brand">
-                <div>{imagem_html(empresa_logo, empresa_nome)}</div>
-                <div>{imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        topo = f'<div class="top-brand"><div>{imagem_html(empresa_logo, empresa_nome)}</div><div>{imagem_html(cliente_logo, cliente_nome) if (cliente_logo or cliente_nome) else ""}</div></div>'
+        st.markdown(topo, unsafe_allow_html=True)
 
-    # Bloco principal
     logo_html = ""
     if empresa_logo:
-        logo_html = f"""
-        <div style="margin-bottom: 22px;">
-            <img class="brand-logo" src="{empresa_logo}" style="width: 96px; height: 96px;" />
-        </div>
-        """
+        logo_html = f'<div style="margin-bottom:22px;"><img class="brand-logo" src="{empresa_logo}" style="width:96px;height:96px;" /></div>'
 
-    st.markdown(
-        f"""
-        <div class="hero">
-            {logo_html}
-            <div class="hero-title">Dashboard de Aderência de Embarque</div>
-            <div class="hero-subtitle">
-                Acompanhamento de aderência por cliente, com histórico comparativo,
-                evolução operacional e controle de colaboradores sem embarque.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    hero = f'<div class="hero">{logo_html}<div class="hero-title">Dashboard de Aderência de Embarque</div><div class="hero-subtitle">Acompanhamento de aderência por cliente, com histórico comparativo, evolução operacional e controle de colaboradores sem embarque.</div></div>'
+    st.markdown(hero, unsafe_allow_html=True)
 
-    # No ADM, mostra logos clicáveis dos clientes abaixo do bloco principal.
     if cliente is None:
         render_clientes_logos_admin()
 
