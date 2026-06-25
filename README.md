@@ -164,6 +164,9 @@ Observação: em alguns ambientes do Streamlit Cloud, o botão Share pode contin
 Corrigido erro de NameError causado por CSS inserido fora do bloco HTML.
 
 
-## V5.9 - Correção link público do cliente
+## V5.10 Estável
 
-Corrigido erro `UnboundLocalError: titulo_periodo` no dashboard público do cliente.
+Correções:
+- Corrigido erro de `titulo_periodo` no link público do cliente.
+- Cabeçalho do ADM e do cliente ficou defensivo contra ausência de logo/configurações.
+- Mantém filtros do cliente e CSS de ocultação do menu.
