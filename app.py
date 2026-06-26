@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import json
+import math
 import base64
 import secrets
 import unicodedata
@@ -127,6 +128,39 @@ def get_supabase_client():
         return None
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
+def limpar_valores_json(obj):
+    """
+    Remove valores incompatíveis com JSON/Supabase, como NaN, NaT e infinitos.
+    """
+    if obj is None:
+        return None
+
+    # pandas NA / NaT
+    try:
+        if pd.isna(obj):
+            return None
+    except Exception:
+        pass
+
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+
+    if isinstance(obj, (int, str, bool)):
+        return obj
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+
+    if isinstance(obj, dict):
+        return {str(k): limpar_valores_json(v) for k, v in obj.items()}
+
+    if isinstance(obj, list):
+        return [limpar_valores_json(v) for v in obj]
+
+    return str(obj)
+
 def normalizar_db(data):
     if not isinstance(data, dict):
         data = DEFAULT_DB.copy()
@@ -176,6 +210,7 @@ def load_db():
 
 def save_db(db):
     db = normalizar_db(db)
+    db = limpar_valores_json(db)
 
     # Produção: Supabase
     if supabase_configurado():
@@ -978,10 +1013,10 @@ def salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques
         db["sem_embarque"].append({
             "importacao_id": importacao_id,
             "cliente_id": cliente["id"],
-            "nome": row.get("NOME_TRATADO", ""),
-            "matricula": row.get("MATRICULA_TRATADA", ""),
-            "linha": row.get("LINHA_TRATADA", ""),
-            "turno": row.get("TURNO_TRATADO", "")
+            "nome": "" if pd.isna(row.get("NOME_TRATADO", "")) else str(row.get("NOME_TRATADO", "")),
+            "matricula": "" if pd.isna(row.get("MATRICULA_TRATADA", "")) else str(row.get("MATRICULA_TRATADA", "")),
+            "linha": "" if pd.isna(row.get("LINHA_TRATADA", "")) else str(row.get("LINHA_TRATADA", "")),
+            "turno": "" if pd.isna(row.get("TURNO_TRATADO", "")) else str(row.get("TURNO_TRATADO", ""))
         })
 
     save_db(db)
@@ -1715,6 +1750,11 @@ def render_admin():
                 st.code(gerar_link_cliente(cliente))
 
         st.subheader("Backup e manutenção")
+
+        if st.button("Regravar banco limpando NaN"):
+            save_db(db)
+            st.success("Banco regravado com limpeza de valores inválidos.")
+
         backup_json = json.dumps(db, ensure_ascii=False, indent=2).encode("utf-8")
         st.download_button(
             "Baixar backup do banco JSON",

@@ -326,3 +326,15 @@ Manage app > Reboot app
 
 - Se Supabase estiver configurado, todos os clientes, logos, importações, métricas e histórico ficam salvos no banco.
 - Se Supabase não estiver configurado, o app usa JSON local, mas isso é apenas temporário e pode ser perdido.
+
+
+## V5.28 - Correção NaN Supabase
+
+Correção:
+- Antes de salvar no Supabase, o app remove valores incompatíveis com JSON, como:
+  - NaN
+  - NaT
+  - infinito
+- Esses valores são convertidos para `null` no banco.
+- Também limpa campos vazios da lista de colaboradores sem embarque.
+- Adicionado botão ADM: "Regravar banco limpando NaN".
