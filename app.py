@@ -9,6 +9,11 @@ import unicodedata
 from pathlib import Path
 from datetime import datetime, date
 
+try:
+    from supabase import create_client
+except Exception:
+    create_client = None
+
 st.set_page_config(page_title="Dashboard de Aderência", layout="wide")
 
 st.markdown("""
@@ -110,33 +115,94 @@ DEFAULT_DB = {
     "sem_embarque": []
 }
 
+def supabase_configurado():
+    return (
+        create_client is not None
+        and "SUPABASE_URL" in st.secrets
+        and "SUPABASE_KEY" in st.secrets
+    )
+
+def get_supabase_client():
+    if not supabase_configurado():
+        return None
+    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+
+def normalizar_db(data):
+    if not isinstance(data, dict):
+        data = DEFAULT_DB.copy()
+
+    for k, v in DEFAULT_DB.items():
+        if k not in data:
+            data[k] = v
+
+    if "settings" not in data or not isinstance(data["settings"], dict):
+        data["settings"] = DEFAULT_DB["settings"].copy()
+
+    for k, v in DEFAULT_DB["settings"].items():
+        if k not in data["settings"]:
+            data["settings"][k] = v
+
+    for key in ["clientes", "importacoes", "metricas_diarias", "sem_embarque"]:
+        if key not in data or not isinstance(data[key], list):
+            data[key] = []
+
+    return data
+
 def load_db():
+    # Produção: Supabase
+    if supabase_configurado():
+        try:
+            sb = get_supabase_client()
+            resp = sb.table("app_state").select("data").eq("id", 1).execute()
+
+            if resp.data and len(resp.data) > 0 and resp.data[0].get("data"):
+                return normalizar_db(resp.data[0]["data"])
+
+            # Primeira execução: cria o registro inicial
+            data = normalizar_db(DEFAULT_DB.copy())
+            sb.table("app_state").upsert({"id": 1, "data": data}).execute()
+            return data
+        except Exception as e:
+            st.error(f"Erro ao carregar dados do Supabase: {e}")
+            st.warning("Usando armazenamento local temporário como fallback.")
+
+    # Fallback local: não é persistente no Streamlit Cloud
     if not DB_PATH.exists():
         save_db(DEFAULT_DB)
     try:
-        data = json.loads(DB_PATH.read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
-            data = DEFAULT_DB.copy()
-
-        for k, v in DEFAULT_DB.items():
-            if k not in data:
-                data[k] = v
-
-        if "settings" not in data or not isinstance(data["settings"], dict):
-            data["settings"] = DEFAULT_DB["settings"].copy()
-
-        for k, v in DEFAULT_DB["settings"].items():
-            if k not in data["settings"]:
-                data["settings"][k] = v
-
-        return data
+        return normalizar_db(json.loads(DB_PATH.read_text(encoding="utf-8")))
     except Exception:
-        return DEFAULT_DB.copy()
+        return normalizar_db(DEFAULT_DB.copy())
 
 def save_db(db):
+    db = normalizar_db(db)
+
+    # Produção: Supabase
+    if supabase_configurado():
+        try:
+            sb = get_supabase_client()
+            sb.table("app_state").upsert({"id": 1, "data": db}).execute()
+            return
+        except Exception as e:
+            st.error(f"Erro ao salvar dados no Supabase: {e}")
+            st.warning("Os dados podem não persistir se o app reiniciar.")
+
+    # Fallback local
     DB_PATH.write_text(json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8")
 
+
 db = load_db()
+
+for key in ["clientes", "importacoes", "metricas_diarias", "sem_embarque"]:
+    if key not in db or not isinstance(db[key], list):
+        db[key] = []
+
+if "settings" not in db or not isinstance(db["settings"], dict):
+    db["settings"] = DEFAULT_DB["settings"].copy()
+for k, v in DEFAULT_DB["settings"].items():
+    if k not in db["settings"]:
+        db["settings"][k] = v
+save_db(db)
 
 PRIMARY_BG = "#0B1220"
 SECONDARY_BG = "#111827"
@@ -825,6 +891,103 @@ def render_clientes_logos_admin():
     html = f'<div class="client-logo-section"><div class="client-logo-section-title">Dashboards dos clientes</div><div class="client-logo-grid">{cards}</div></div>'
     st.markdown(html, unsafe_allow_html=True)
 
+
+def salvar_importacao(cliente, semana_inicio, semana_fim, dias_semana, embarques_por_dia, embarques_file, colaboradores_file):
+    embarques_df = preparar_embarques(pd.read_excel(embarques_file), cliente["nome"])
+    colaboradores_df = preparar_colaboradores(pd.read_excel(colaboradores_file), cliente["nome"])
+
+    embarques_df = embarques_df[
+        (embarques_df["DATA"] >= semana_inicio) &
+        (embarques_df["DATA"] <= semana_fim)
+    ].copy()
+
+    datas = datas_operacao(semana_inicio, semana_fim, dias_semana)
+    if not datas:
+        raise ValueError("Nenhum dia de operação selecionado no período.")
+
+    nomes_base = set(colaboradores_df["NOME_KEY"].unique())
+    nomes_emb = set(embarques_df["PASSAGEIRO_KEY"].unique())
+
+    metricas = []
+    total_esperado = 0
+    total_realizado = 0
+
+    for d in datas:
+        if colaboradores_df["DATA_CADASTRO"].notna().any():
+            elegiveis = colaboradores_df[
+                (colaboradores_df["DATA_CADASTRO"].isna()) |
+                (colaboradores_df["DATA_CADASTRO"].dt.date <= d)
+            ]
+        else:
+            elegiveis = colaboradores_df
+
+        cadastrados_dia = elegiveis["NOME_KEY"].nunique()
+        esperado = cadastrados_dia * embarques_por_dia
+        realizado = int((embarques_df["DATA"] == d).sum())
+        aderencia = (realizado / esperado * 100) if esperado else 0
+        faltas = max(esperado - realizado, 0)
+
+        total_esperado += esperado
+        total_realizado += realizado
+
+        metricas.append({
+            "data": str(d),
+            "colaboradores_cadastrados": int(cadastrados_dia),
+            "esperado": int(esperado),
+            "realizado": int(realizado),
+            "aderencia": float(aderencia),
+            "faltas": int(faltas)
+        })
+
+    aderencia_total = (total_realizado / total_esperado * 100) if total_esperado else 0
+    faltas_total = max(total_esperado - total_realizado, 0)
+
+    sem_emb_keys = nomes_base - nomes_emb
+    sem_emb_df = colaboradores_df[colaboradores_df["NOME_KEY"].isin(sem_emb_keys)].copy()
+
+    importacao_id = secrets.token_hex(8)
+    registro = {
+        "id": importacao_id,
+        "cliente_id": cliente["id"],
+        "cliente_nome": cliente["nome"],
+        "semana_inicio": str(semana_inicio),
+        "semana_fim": str(semana_fim),
+        "data_importacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "dias_operacao": len(datas),
+        "dias_operacao_config": ",".join(map(str, dias_semana)),
+        "embarques_por_colaborador_dia": int(embarques_por_dia),
+        "colaboradores_cadastrados": int(colaboradores_df["NOME_KEY"].nunique()),
+        "colaboradores_que_embarcaram": int(embarques_df["PASSAGEIRO_KEY"].nunique()),
+        "total_esperado": int(total_esperado),
+        "total_realizado": int(total_realizado),
+        "aderencia": float(aderencia_total),
+        "faltas_estimadas": int(faltas_total),
+        "colaboradores_sem_embarque": int(sem_emb_df.shape[0]),
+        "arquivo_embarque": embarques_file.name,
+        "arquivo_colaboradores": colaboradores_file.name
+    }
+
+    db["importacoes"].append(registro)
+
+    for m in metricas:
+        m["importacao_id"] = importacao_id
+        m["cliente_id"] = cliente["id"]
+        db["metricas_diarias"].append(m)
+
+    for _, row in sem_emb_df.iterrows():
+        db["sem_embarque"].append({
+            "importacao_id": importacao_id,
+            "cliente_id": cliente["id"],
+            "nome": row.get("NOME_TRATADO", ""),
+            "matricula": row.get("MATRICULA_TRATADA", ""),
+            "linha": row.get("LINHA_TRATADA", ""),
+            "turno": row.get("TURNO_TRATADO", "")
+        })
+
+    save_db(db)
+    return registro
+
+
 def render_header(cliente=None):
     settings = db.get("settings", {}) if isinstance(db, dict) else {}
     empresa_logo = settings.get("empresa_logo", "") or ""
@@ -1183,6 +1346,12 @@ def render_admin():
             st.rerun()
 
     render_header()
+
+    if supabase_configurado():
+        st.success("Banco persistente conectado: Supabase.")
+    else:
+        st.warning("Atenção: Supabase não configurado. No Streamlit Cloud, dados salvos localmente podem ser perdidos ao reiniciar o app.")
+
     st.markdown('<div class="section-title">Painel administrativo</div>', unsafe_allow_html=True)
 
     aba1, aba2, aba3, aba4, aba5 = st.tabs(["Visão geral ADM", "Clientes", "Nova importação semanal", "Gerenciar importações", "Configurações e links"])

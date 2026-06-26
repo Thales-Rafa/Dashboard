@@ -267,3 +267,62 @@ Correções:
   - Realizado
   - Aderência
 - Percentuais aparecem com símbolo `%`.
+
+
+## V5.26 - Correção salvar_importacao
+
+- Restaurada/garantida a função `salvar_importacao`.
+- Corrige erro `name 'salvar_importacao' is not defined` ao processar nova importação.
+- Mantém tooltips em português, histórico semanal real e demais ajustes visuais.
+
+
+## V5.27 - Persistência com Supabase
+
+Esta versão resolve o problema de perda de dados no Streamlit Cloud.
+
+### Por que os dados sumiam?
+
+O Streamlit Cloud não deve ser usado como banco de dados. Arquivos locais como:
+
+```text
+data/database.json
+```
+
+podem ser perdidos quando o app reinicia, hiberna, atualiza ou troca de máquina.
+
+### Como configurar o Supabase
+
+Crie um projeto no Supabase e execute este SQL:
+
+```sql
+create table if not exists app_state (
+  id integer primary key,
+  data jsonb not null,
+  updated_at timestamp with time zone default now()
+);
+```
+
+Depois, no Streamlit Cloud, configure em:
+
+```text
+Manage app > Settings > Secrets
+```
+
+Adicione:
+
+```toml
+SUPABASE_URL = "https://SEU-PROJETO.supabase.co"
+SUPABASE_KEY = "SUA-ANON-KEY"
+ADMIN_PASSWORD = "sua-senha-adm"
+```
+
+Depois clique em:
+
+```text
+Manage app > Reboot app
+```
+
+### Funcionamento
+
+- Se Supabase estiver configurado, todos os clientes, logos, importações, métricas e histórico ficam salvos no banco.
+- Se Supabase não estiver configurado, o app usa JSON local, mas isso é apenas temporário e pode ser perdido.
